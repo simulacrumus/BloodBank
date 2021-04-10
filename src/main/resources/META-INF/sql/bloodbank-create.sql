@@ -148,6 +148,7 @@ CREATE TABLE IF NOT EXISTS `bloodbank`.`donation_record` (
   `version` INT NOT NULL DEFAULT '1',
   PRIMARY KEY (`record_id`),
   UNIQUE INDEX `record_id_UNIQUE` (`record_id` ASC) VISIBLE,
+  UNIQUE INDEX `donation_id_UNIQUE` (`donation_id` ASC) VISIBLE,
   INDEX `fk_donation_record_person1_idx` (`person_id` ASC) VISIBLE,
   INDEX `fk_donation_record_blood_donation1_idx` (`donation_id` ASC) VISIBLE,
   CONSTRAINT `fk_donation_record_blood_donation1`

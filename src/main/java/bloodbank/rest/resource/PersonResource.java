@@ -71,7 +71,7 @@ public class PersonResource {
 		Person person = null;
 
 		if ( sc.isCallerInRole( ADMIN_ROLE)) {
-			person = service.getPersonId( id);
+			person = service.getPersonById( id);
 			response = Response.status( person == null ? Status.NOT_FOUND : Status.OK).entity( person).build();
 		} else if ( sc.isCallerInRole( USER_ROLE)) {
 			WrappingCallerPrincipal wCallerPrincipal = (WrappingCallerPrincipal) sc.getCallerPrincipal();

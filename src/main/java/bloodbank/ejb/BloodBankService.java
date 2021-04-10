@@ -42,6 +42,7 @@ import javax.persistence.TypedQuery;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Root;
+import javax.persistence.metamodel.SingularAttribute;
 import javax.security.enterprise.identitystore.Pbkdf2PasswordHash;
 import javax.transaction.Transactional;
 
@@ -51,8 +52,13 @@ import org.hibernate.Hibernate;
 
 import bloodbank.entity.Address;
 import bloodbank.entity.BloodBank;
+import bloodbank.entity.BloodBank_;
 import bloodbank.entity.BloodDonation;
 import bloodbank.entity.Person;
+import bloodbank.entity.Person_;
+import bloodbank.entity.Phone;
+import bloodbank.entity.Phone_;
+import bloodbank.entity.PojoBase;
 import bloodbank.entity.SecurityRole;
 import bloodbank.entity.SecurityUser;
 
@@ -72,11 +78,11 @@ public class BloodBankService implements Serializable {
     protected Pbkdf2PasswordHash pbAndjPasswordHash;
 
     public List<Person> getAllPeople() {
-    	return null;
+    	return getAllEntities(Person.class);
     }
 
-    public Person getPersonId(int id) {
-    	return null;
+    public Person getPersonById(int id) {
+    	return getEntityById(Person.class, Integer.class, Person_.id, id);
     }
 
     @Transactional
@@ -119,7 +125,7 @@ public class BloodBankService implements Serializable {
      */
     @Transactional
     public Person updatePersonById(int id, Person personWithUpdates) {
-        Person personToBeUpdated = getPersonId(id);
+        Person personToBeUpdated = getPersonById(id);
         if (personToBeUpdated != null) {
             em.refresh(personToBeUpdated);
             em.merge(personWithUpdates);
@@ -135,7 +141,7 @@ public class BloodBankService implements Serializable {
      */
     @Transactional
     public void deletePersonById(int id) {
-        Person person = getPersonId(id);
+        Person person = getPersonById(id);
         if (person != null) {
             em.refresh(person);
             TypedQuery<SecurityUser> findUser = em
@@ -146,4 +152,145 @@ public class BloodBankService implements Serializable {
             em.remove(person);
         }
     }
+    
+    
+    //CRUD for BloodBank
+    public List<BloodBank> getAllBloodBanks() {
+    	return getAllEntities(BloodBank.class);
+    }
+    
+    public BloodBank getBloodBankById(int id) {
+    	return getEntityById(BloodBank.class, Integer.class, BloodBank_.id, id);
+    }
+    
+    @Transactional
+    public BloodBank updateBloodBankById(int id, BloodBank bloodBankWithUpdates) {
+    	return updateEntityById(BloodBank.class, Integer.class, BloodBank_.id, id, bloodBankWithUpdates);
+    }
+    
+    @Transactional
+    public BloodBank deleteBloodBankById(int id) {
+    	return deleteEntityById(BloodBank.class, Integer.class, BloodBank_.id, id);
+    }
+    
+    @Transactional
+    public BloodBank persistBloodBank(BloodBank newBloodBank) {
+    	return persistEntity(newBloodBank);
+    }
+    
+    
+    
+    
+    //CRUD for Phone
+    public List<Phone> getAllPhones() {
+    	return getAllEntities(Phone.class);
+    }
+    
+    public Phone getPhoneById(int id) {
+    	return getEntityById(Phone.class, Integer.class, Phone_.id, id);
+    }
+    
+    @Transactional
+    public Phone updatePhoneById(int id, Phone phoneWithUpdates) {
+    	return updateEntityById(Phone.class, Integer.class, Phone_.id, id, phoneWithUpdates);
+    }
+    
+    @Transactional
+    public Phone deletePhoneById(int id) {
+    	return deleteEntityById(Phone.class, Integer.class, Phone_.id, id);
+    }
+    
+    @Transactional
+    public Phone persistPhone(Phone newPhone) {
+    	return persistEntity(newPhone);
+    }
+    
+    
+    
+    
+    
+    
+    /**
+     *  Helper method to get an entity by id
+     * @param <T>
+     * @param <R>
+     * @param clazz
+     * @param classPK
+     * @param sa
+     * @param id
+     * @return
+     */
+    private <T extends PojoBase, R> T getEntityById(Class< T> clazz, Class< R> classPK, SingularAttribute< ? super T, R> sa, R id) {
+		CriteriaBuilder builder = em.getCriteriaBuilder();
+		CriteriaQuery< T> query = builder.createQuery( clazz);
+		Root< T> root = query.from( clazz);
+		query.select( root);
+		query.where( builder.equal( root.get(sa), builder.parameter( classPK, "id")));
+		TypedQuery< T> tq = em.createQuery( query);
+		tq.setParameter( "id", id);
+		return tq.getSingleResult();
+	}
+    
+    /**
+     * Helper method to get all entities for an entity type
+     * @param <T>
+     * @param clazz
+     * @return
+     */
+    private <T extends PojoBase> List< T> getAllEntities( Class< T> clazz) {
+		CriteriaBuilder builder = em.getCriteriaBuilder();
+		CriteriaQuery<T> query = builder.createQuery( clazz);
+		Root< T> root = query.from( clazz);
+		query.select( root);
+		TypedQuery< T> tq = em.createQuery( query);
+		return tq.getResultList();
+	}
+    
+    /**
+     * Helper method to delete an entity by id
+     * @param <T>
+     * @param <R>
+     * @param clazz
+     * @param classPK
+     * @param sa
+     * @param id
+     */
+    private <T extends PojoBase, R> T deleteEntityById(Class< T> clazz, Class< R> classPK, SingularAttribute< ? super T, R> sa, R id) {
+    	T t = getEntityById(clazz, classPK, sa, id);
+    	if(t!=null) {
+    		em.refresh(t);
+    		em.remove(t);
+    	}
+    	return t;
+    }
+    
+    /**
+     * Helper method to update an entity by id
+     * @param <T>
+     * @param <R>
+     * @param clazz
+     * @param classPK
+     * @param sa
+     * @param id
+     * @param tWithUpdates
+     * @return
+     */
+    private <T extends PojoBase, R> T updateEntityById(Class< T> clazz, Class< R> classPK, SingularAttribute< ? super T, R> sa, R id, T tWithUpdates) {
+    	T tToBeUpdated = getEntityById(clazz, classPK, sa, id);
+    	if(tToBeUpdated != null) {
+    		em.refresh(tToBeUpdated);
+            em.merge(tWithUpdates);
+            em.flush();
+    	}
+    	return tToBeUpdated;
+    }
+    
+    
+    private <T extends PojoBase> T persistEntity(T newEntity) {
+    	em.persist(newEntity);
+    	return newEntity;
+    }
+
+    
+    
 }
