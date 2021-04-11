@@ -51,9 +51,13 @@ import org.apache.logging.log4j.Logger;
 import org.hibernate.Hibernate;
 
 import bloodbank.entity.Address;
+import bloodbank.entity.Address_;
 import bloodbank.entity.BloodBank;
 import bloodbank.entity.BloodBank_;
 import bloodbank.entity.BloodDonation;
+import bloodbank.entity.BloodDonation_;
+import bloodbank.entity.DonationRecord;
+import bloodbank.entity.DonationRecord_;
 import bloodbank.entity.Person;
 import bloodbank.entity.Person_;
 import bloodbank.entity.Phone;
@@ -78,7 +82,10 @@ public class BloodBankService implements Serializable {
     protected Pbkdf2PasswordHash pbAndjPasswordHash;
 
     public List<Person> getAllPeople() {
-    	return getAllEntities(Person.class);
+    	TypedQuery<Person> getAllPeople = em
+                .createNamedQuery(ALL_PERSONS_QUERY_NAME, Person.class);
+    	return getAllPeople.getResultList();
+    	//return getAllEntities(Person.class);
     }
 
     public Person getPersonById(int id) {
@@ -177,11 +184,9 @@ public class BloodBankService implements Serializable {
     public BloodBank persistBloodBank(BloodBank newBloodBank) {
     	return persistEntity(newBloodBank);
     }
+
     
-    
-    
-    
-    //CRUD for Phone
+    /***** CRUD for Phone *****/
     public List<Phone> getAllPhones() {
     	return getAllEntities(Phone.class);
     }
@@ -206,8 +211,78 @@ public class BloodBankService implements Serializable {
     }
     
     
+    /***** CRUD for Address *****/
+    public List<Address> getAllAddresses() {
+    	return getAllEntities(Address.class);
+    }
+    
+    public Address getAddressById(int id) {
+    	return getEntityById(Address.class, Integer.class, Address_.id, id);
+    }
+    
+    @Transactional
+    public Address updateAddressById(int id, Address addressWithUpdates) {
+    	return updateEntityById(Address.class, Integer.class, Address_.id, id, addressWithUpdates);
+    }
+    
+    @Transactional
+    public Address deleteAddressById(int id) {
+    	return deleteEntityById(Address.class, Integer.class, Address_.id, id);
+    }
+    
+    @Transactional
+    public Address persistAddress(Address newAddress) {
+    	return persistEntity(newAddress);
+    }
     
     
+    /***** CRUD for BloodDonation *****/
+    public List<BloodDonation> getAllBloodDonations() {
+    	return getAllEntities(BloodDonation.class);
+    }
+    
+    public BloodDonation getBloodDonationById(int id) {
+    	return getEntityById(BloodDonation.class, Integer.class, BloodDonation_.id, id);
+    }
+    
+    @Transactional
+    public BloodDonation updateBloodDonationById(int id, BloodDonation bloodDonationWithUpdates) {
+    	return updateEntityById(BloodDonation.class, Integer.class, BloodDonation_.id, id, bloodDonationWithUpdates);
+    }
+    
+    @Transactional
+    public BloodDonation deleteBloodDonationById(int id) {
+    	return deleteEntityById(BloodDonation.class, Integer.class, BloodDonation_.id, id);
+    }
+    
+    @Transactional
+    public BloodDonation persistBloodDonation(BloodDonation newBloodDonation) {
+    	return persistEntity(newBloodDonation);
+    }
+    
+    /***** CRUD for DonationRecord *****/
+    public List<DonationRecord> getAllDonationRecords() {
+    	return getAllEntities(DonationRecord.class);
+    }
+    
+    public DonationRecord getDonationRecordById(int id) {
+    	return getEntityById(DonationRecord.class, Integer.class, DonationRecord_.id, id);
+    }
+    
+    @Transactional
+    public DonationRecord updateDonationRecordById(int id, DonationRecord donationRecordWithUpdates) {
+    	return updateEntityById(DonationRecord.class, Integer.class, DonationRecord_.id, id, donationRecordWithUpdates);
+    }
+    
+    @Transactional
+    public DonationRecord deleteDonationRecordById(int id) {
+    	return deleteEntityById(DonationRecord.class, Integer.class, DonationRecord_.id, id);
+    }
+    
+    @Transactional
+    public DonationRecord persistDonationRecord(DonationRecord newDonationRecord) {
+    	return persistEntity(newDonationRecord);
+    }
     
     
     /**
@@ -285,12 +360,15 @@ public class BloodBankService implements Serializable {
     	return tToBeUpdated;
     }
     
-    
+    /**
+     * Helper method to persist an entity
+     * @param <T>
+     * @param newEntity
+     * @return
+     */
     private <T extends PojoBase> T persistEntity(T newEntity) {
     	em.persist(newEntity);
     	return newEntity;
     }
-
-    
     
 }
