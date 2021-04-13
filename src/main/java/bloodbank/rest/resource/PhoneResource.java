@@ -34,6 +34,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import bloodbank.ejb.BloodBankService;
+import bloodbank.entity.Address;
 import bloodbank.entity.Phone;
 
 @Path(PHONE_RESOURCE_NAME)
@@ -63,24 +64,16 @@ public class PhoneResource {
 	@Path( RESOURCE_PATH_ID_PATH)
 	public Response getPhoneById( @PathParam( RESOURCE_PATH_ID_ELEMENT) int id) {
 		LOG.debug( "try to retrieve specific phone " + id);
-		Response response = null;
-		Phone phone = null;
-		if ( sc.isCallerInRole( ADMIN_ROLE)) {
-			phone = service.getPhoneById(id);
-			response = Response.status( phone == null ? Status.NOT_FOUND : Status.OK).entity( phone).build();
-		} else {
-			response = Response.status( Status.BAD_REQUEST).build();
-			LOG.debug( "Admin role required!");
-		}
+		Phone phone =service.getPhoneById(id);
+		Response response = Response.status( phone == null ? Status.NOT_FOUND : Status.OK).entity( phone).build();
 		return response;
 	}
 
 	@POST
 	@RolesAllowed( { ADMIN_ROLE })
 	public Response addPhone( Phone newPhone) {
-		Response response = null;
 		Phone addedPhone = service.persistPhone( newPhone);
-		response = Response.ok( addedPhone).build();
+		Response response = Response.ok( addedPhone).build();
 		return response;
 	}	
 	
@@ -88,9 +81,8 @@ public class PhoneResource {
 	@RolesAllowed( { ADMIN_ROLE })
 	@Path( RESOURCE_PATH_ID_PATH)
 	public Response deletePhoneById( @PathParam( RESOURCE_PATH_ID_ELEMENT) int id) {
-		Response response = null;
 		Phone deletedPhone = service.deletePhoneById(id);
-		response = Response.ok( deletedPhone).build();
+		Response response = Response.ok( deletedPhone).build();
 		return response;
 	}
 	

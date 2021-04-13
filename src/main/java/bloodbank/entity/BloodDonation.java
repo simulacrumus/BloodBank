@@ -18,22 +18,29 @@ import javax.persistence.Table;
 
 import org.hibernate.Hibernate;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 /**
  * The persistent class for the blood_donation database table.
  */
 @Entity
 @Table( name = "blood_donation")
-@NamedQuery( name = "BloodDonation.findAll", query = "SELECT b FROM BloodDonation b")
+@NamedQuery( name = BloodDonation.ALL_BLOOD_DONATION_QUERY_NAME, query = "SELECT distinct b FROM BloodDonation b left join fetch b.record left join fetch b.bank c left join fetch c.donations")
+@NamedQuery( name = BloodDonation.BLOOD_DONATION_BY_ID_QUERY_NAME, query = "SELECT distinct b FROM BloodDonation b left join fetch b.record left join fetch b.bank c left join fetch c.donations where b.id=:param1")
 @AttributeOverride( name = "id", column = @Column( name = "donation_id"))
 public class BloodDonation extends PojoBase implements Serializable {
 	private static final long serialVersionUID = 1L;
 
+	public static final String ALL_BLOOD_DONATION_QUERY_NAME = "BloodDonation.findAll";
+	public static final String BLOOD_DONATION_BY_ID_QUERY_NAME = "BloodDonation.findById";
+	
 	@ManyToOne( optional = false, cascade = { CascadeType.MERGE, CascadeType.REFRESH}, fetch = FetchType.LAZY)
 	@JoinColumn( name = "bank_id", referencedColumnName = "bank_id")
 	private BloodBank bank;
 
 	@OneToOne( fetch = FetchType.LAZY, cascade = { CascadeType.MERGE, CascadeType.REFRESH}, optional = true, mappedBy = "donation")
 //	@JoinColumn( name = "donation_id", referencedColumnName = "donation_id", nullable = true, insertable = false, updatable = false)
+	@JsonIgnore
 	private DonationRecord record;
 
 	@Basic( optional = false)

@@ -12,6 +12,7 @@ package bloodbank.ejb;
 
 import static bloodbank.entity.BloodBank.ALL_BLOODBANKS_QUERY_NAME;
 import static bloodbank.entity.Person.ALL_PERSONS_QUERY_NAME;
+import static bloodbank.entity.Phone.ALL_PHONES_QUERY_NAME;
 import static bloodbank.entity.SecurityRole.ROLE_BY_NAME_QUERY;
 import static bloodbank.entity.SecurityUser.USER_FOR_OWNING_PERSON_QUERY;
 import static bloodbank.utility.MyConstants.DEFAULT_KEY_SIZE;
@@ -89,12 +90,14 @@ public class BloodBankService implements Serializable {
     }
 
     public Person getPersonById(int id) {
-    	return getEntityById(Person.class, Integer.class, Person_.id, id);
+    	return getEntityById(Person.class, Person.GET_PERSION_BY_ID_QUERY_NAME, id);
     }
 
     @Transactional
     public Person persistPerson(Person newPerson) {
-    	return null;
+    	Person person = persistEntity(newPerson);
+    	buildUserForNewPerson( person);
+    	return person;
     }
 
     @Transactional
@@ -162,22 +165,33 @@ public class BloodBankService implements Serializable {
     
     
     //CRUD for BloodBank
+    
+    
     public List<BloodBank> getAllBloodBanks() {
-    	return getAllEntities(BloodBank.class);
+    	return getAllEntities( BloodBank.class, BloodBank.ALL_BLOODBANKS_QUERY_NAME);
     }
     
     public BloodBank getBloodBankById(int id) {
-    	return getEntityById(BloodBank.class, Integer.class, BloodBank_.id, id);
+    	return getEntityById(BloodBank.class, BloodBank.GET_BLOODBANK_BY_ID_QUERY_NAME, id);
     }
     
     @Transactional
     public BloodBank updateBloodBankById(int id, BloodBank bloodBankWithUpdates) {
-    	return updateEntityById(BloodBank.class, Integer.class, BloodBank_.id, id, bloodBankWithUpdates);
+    	return updateEntityById(BloodBank.class, BloodBank.GET_BLOODBANK_BY_ID_QUERY_NAME, id, bloodBankWithUpdates);
     }
     
     @Transactional
     public BloodBank deleteBloodBankById(int id) {
-    	return deleteEntityById(BloodBank.class, Integer.class, BloodBank_.id, id);
+    	BloodBank bloodBank = getEntityById(BloodBank.class, BloodBank.GET_BLOODBANK_BY_ID_QUERY_NAME, id);
+    	bloodBank.getDonations().forEach(donation -> {
+    		if(donation.getRecord() != null) {
+    			DonationRecord donationRecord = getEntityById(DonationRecord.class, DonationRecord.GET_RECORD_BY_ID_QUERY_NAME, id);
+    			donationRecord.setDonation(null);
+    		}
+    		donation.setRecord(null);
+    		em.merge(donation);
+    	});
+    	return deleteEntityById(BloodBank.class, BloodBank.GET_BLOODBANK_BY_ID_QUERY_NAME, id);
     }
     
     @Transactional
@@ -187,22 +201,19 @@ public class BloodBankService implements Serializable {
 
     
     /***** CRUD for Phone *****/
+    
+    
     public List<Phone> getAllPhones() {
-    	return getAllEntities(Phone.class);
+    	return getAllEntities( Phone.class, Phone.ALL_PHONES_QUERY_NAME);
     }
     
     public Phone getPhoneById(int id) {
-    	return getEntityById(Phone.class, Integer.class, Phone_.id, id);
-    }
-    
-    @Transactional
-    public Phone updatePhoneById(int id, Phone phoneWithUpdates) {
-    	return updateEntityById(Phone.class, Integer.class, Phone_.id, id, phoneWithUpdates);
+    	return getEntityById(Phone.class, Phone.GET_PHONE_BY_ID_QUERY_NAME , id);
     }
     
     @Transactional
     public Phone deletePhoneById(int id) {
-    	return deleteEntityById(Phone.class, Integer.class, Phone_.id, id);
+    	return deleteEntityById(Phone.class, Phone.GET_PHONE_BY_ID_QUERY_NAME, id);
     }
     
     @Transactional
@@ -210,24 +221,35 @@ public class BloodBankService implements Serializable {
     	return persistEntity(newPhone);
     }
     
+    @Transactional
+    public Phone updatePhoneById(int id, Phone updatingPhone) {
+    	Phone phoneToBeUpdated = getEntityById(Phone.class, Phone.GET_PHONE_BY_ID_QUERY_NAME, id);
+    	if(phoneToBeUpdated != null) {
+    		em.refresh(phoneToBeUpdated);
+    		phoneToBeUpdated.setAreaCode(updatingPhone.getAreaCode());
+    		phoneToBeUpdated.setCountryCode(updatingPhone.getCountryCode());
+    		phoneToBeUpdated.setNumber(updatingPhone.getNumber());
+    		em.merge(phoneToBeUpdated);
+    		em.flush();
+    	}
+    	return phoneToBeUpdated;
+    }
+    
     
     /***** CRUD for Address *****/
+    
+    
     public List<Address> getAllAddresses() {
-    	return getAllEntities(Address.class);
+    	return getAllEntities( Address.class, Address.ALL_ADDRESSES_QUERY_NAME);
     }
     
     public Address getAddressById(int id) {
-    	return getEntityById(Address.class, Integer.class, Address_.id, id);
-    }
-    
-    @Transactional
-    public Address updateAddressById(int id, Address addressWithUpdates) {
-    	return updateEntityById(Address.class, Integer.class, Address_.id, id, addressWithUpdates);
+    	return getEntityById(Address.class, Address.GET_ADDRESSS_BY_ID_QUERY_NAME, id);
     }
     
     @Transactional
     public Address deleteAddressById(int id) {
-    	return deleteEntityById(Address.class, Integer.class, Address_.id, id);
+    	return deleteEntityById(Address.class, Address.GET_ADDRESSS_BY_ID_QUERY_NAME, id);
     }
     
     @Transactional
@@ -235,48 +257,84 @@ public class BloodBankService implements Serializable {
     	return persistEntity(newAddress);
     }
     
+    @Transactional
+    public Address updateAddressById(int id, Address updatingAddress) {
+    	Address addressToBeUpdated = getEntityById(Address.class, Address.GET_ADDRESSS_BY_ID_QUERY_NAME, id);
+    	if(addressToBeUpdated != null) {
+    		em.refresh(addressToBeUpdated);
+    		addressToBeUpdated.setAddress(
+    				updatingAddress.getStreetNumber(),
+    				updatingAddress.getStreet(),
+    				updatingAddress.getCity(),
+    				updatingAddress.getProvince(),
+    				updatingAddress.getCountry(),
+    				updatingAddress.getZipcode());
+    		em.merge(addressToBeUpdated);
+    		em.flush();
+    		
+    	}
+    	return addressToBeUpdated;
+    }
+    
     
     /***** CRUD for BloodDonation *****/
+    
+    
     public List<BloodDonation> getAllBloodDonations() {
-    	return getAllEntities(BloodDonation.class);
+    	return getAllEntities( BloodDonation.class, BloodDonation.ALL_BLOOD_DONATION_QUERY_NAME);
     }
     
     public BloodDonation getBloodDonationById(int id) {
-    	return getEntityById(BloodDonation.class, Integer.class, BloodDonation_.id, id);
+    	return getEntityById( BloodDonation.class, BloodDonation.BLOOD_DONATION_BY_ID_QUERY_NAME, id);
     }
     
-    @Transactional
-    public BloodDonation updateBloodDonationById(int id, BloodDonation bloodDonationWithUpdates) {
-    	return updateEntityById(BloodDonation.class, Integer.class, BloodDonation_.id, id, bloodDonationWithUpdates);
-    }
+//    @Transactional
+//    public BloodDonation updateBloodDonationById(int id, BloodDonation bloodDonationWithUpdates) {
+//    	return updateEntityById(BloodDonation.class, BloodDonation.BLOOD_DONATION_BY_ID_QUERY_NAME, id, bloodDonationWithUpdates);
+//    }
     
     @Transactional
     public BloodDonation deleteBloodDonationById(int id) {
-    	return deleteEntityById(BloodDonation.class, Integer.class, BloodDonation_.id, id);
+    	BloodDonation bloodDonation = getEntityById( BloodDonation.class, BloodDonation.BLOOD_DONATION_BY_ID_QUERY_NAME, id);
+    	BloodBank bloodBank = bloodDonation.getBank();
+    	bloodBank.getDonations().remove(bloodDonation);
+    	bloodDonation.setBank(null);
+    	DonationRecord donationRecord = bloodDonation.getRecord();
+    	donationRecord.setDonation(null);
+    	em.refresh(bloodDonation);
+		em.remove(bloodDonation);
+		em.flush();
+		return bloodDonation;
     }
     
     @Transactional
-    public BloodDonation persistBloodDonation(BloodDonation newBloodDonation) {
+    public BloodDonation persistBloodDonation(BloodDonation newBloodDonation, int bloodBankId) {
+    	BloodBank bank = getEntityById(BloodBank.class, BloodBank.GET_BLOODBANK_BY_ID_QUERY_NAME, bloodBankId);
+    	newBloodDonation.setBank(bank);
+    	bank.getDonations().add(newBloodDonation);
     	return persistEntity(newBloodDonation);
     }
     
+    
     /***** CRUD for DonationRecord *****/
+    
+    
     public List<DonationRecord> getAllDonationRecords() {
-    	return getAllEntities(DonationRecord.class);
+    	return getAllEntities(DonationRecord.class, DonationRecord.ALL_RECORDS_QUERY_NAME);
     }
     
     public DonationRecord getDonationRecordById(int id) {
-    	return getEntityById(DonationRecord.class, Integer.class, DonationRecord_.id, id);
+    	return getEntityById(DonationRecord.class, DonationRecord.ALL_RECORDS_QUERY_NAME, id);
     }
     
     @Transactional
     public DonationRecord updateDonationRecordById(int id, DonationRecord donationRecordWithUpdates) {
-    	return updateEntityById(DonationRecord.class, Integer.class, DonationRecord_.id, id, donationRecordWithUpdates);
+    	return updateEntityById(DonationRecord.class, DonationRecord.ALL_RECORDS_QUERY_NAME, id, donationRecordWithUpdates);
     }
     
     @Transactional
     public DonationRecord deleteDonationRecordById(int id) {
-    	return deleteEntityById(DonationRecord.class, Integer.class, DonationRecord_.id, id);
+    	return deleteEntityById(DonationRecord.class, DonationRecord.ALL_RECORDS_QUERY_NAME, id);
     }
     
     @Transactional
@@ -284,91 +342,50 @@ public class BloodBankService implements Serializable {
     	return persistEntity(newDonationRecord);
     }
     
-    
-    /**
-     *  Helper method to get an entity by id
-     * @param <T>
-     * @param <R>
-     * @param clazz
-     * @param classPK
-     * @param sa
-     * @param id
-     * @return
-     */
-    private <T extends PojoBase, R> T getEntityById(Class< T> clazz, Class< R> classPK, SingularAttribute< ? super T, R> sa, R id) {
-		CriteriaBuilder builder = em.getCriteriaBuilder();
-		CriteriaQuery< T> query = builder.createQuery( clazz);
-		Root< T> root = query.from( clazz);
-		query.select( root);
-		query.where( builder.equal( root.get(sa), builder.parameter( classPK, "id")));
-		TypedQuery< T> tq = em.createQuery( query);
-		tq.setParameter( "id", id);
-		return tq.getSingleResult();
-	}
-    
-    /**
-     * Helper method to get all entities for an entity type
-     * @param <T>
-     * @param clazz
-     * @return
-     */
-    private <T extends PojoBase> List< T> getAllEntities( Class< T> clazz) {
-		CriteriaBuilder builder = em.getCriteriaBuilder();
-		CriteriaQuery<T> query = builder.createQuery( clazz);
-		Root< T> root = query.from( clazz);
-		query.select( root);
-		TypedQuery< T> tq = em.createQuery( query);
-		return tq.getResultList();
-	}
-    
-    /**
-     * Helper method to delete an entity by id
-     * @param <T>
-     * @param <R>
-     * @param clazz
-     * @param classPK
-     * @param sa
-     * @param id
-     */
-    private <T extends PojoBase, R> T deleteEntityById(Class< T> clazz, Class< R> classPK, SingularAttribute< ? super T, R> sa, R id) {
-    	T t = getEntityById(clazz, classPK, sa, id);
-    	if(t!=null) {
-    		em.refresh(t);
-    		em.remove(t);
-    	}
-    	return t;
+    public boolean isBloodBankDuplicated(BloodBank newBloodBank) {
+    	TypedQuery<Long> allBloodDonationsQuery = em.createNamedQuery(BloodBank.IS_DUPLICATE_QUERY_NAME, Long.class);
+    	allBloodDonationsQuery.setParameter(PARAM1, newBloodBank.getName());
+    	return allBloodDonationsQuery.getSingleResult() >= 1;
     }
     
-    /**
-     * Helper method to update an entity by id
-     * @param <T>
-     * @param <R>
-     * @param clazz
-     * @param classPK
-     * @param sa
-     * @param id
-     * @param tWithUpdates
-     * @return
-     */
-    private <T extends PojoBase, R> T updateEntityById(Class< T> clazz, Class< R> classPK, SingularAttribute< ? super T, R> sa, R id, T tWithUpdates) {
-    	T tToBeUpdated = getEntityById(clazz, classPK, sa, id);
-    	if(tToBeUpdated != null) {
-    		em.refresh(tToBeUpdated);
-            em.merge(tWithUpdates);
-            em.flush();
-    	}
-    	return tToBeUpdated;
+    
+    
+    /***** HELPER METHODS *****/
+    
+    private <T extends PojoBase> List<T> getAllEntities(Class< T> entity, String queryName){
+    	TypedQuery<T> allBloodDonationsQuery = em.createNamedQuery(queryName, entity);
+    	return allBloodDonationsQuery.getResultList();
     }
     
-    /**
-     * Helper method to persist an entity
-     * @param <T>
-     * @param newEntity
-     * @return
-     */
     private <T extends PojoBase> T persistEntity(T newEntity) {
     	em.persist(newEntity);
     	return newEntity;
     }
     
+    private <T extends PojoBase> T getEntityById(Class< T> entity, String queryName, int id ) {
+    	TypedQuery<T> allBloodDonationsQuery = em.createNamedQuery(queryName, entity);
+    	allBloodDonationsQuery.setParameter(PARAM1, id);
+    	return allBloodDonationsQuery.getSingleResult(); 
+	}
+    
+
+    private <T extends PojoBase> T deleteEntityById(Class< T> entity, String queryName, int id) {
+    	T t = getEntityById(entity, queryName, id);
+    	if(t != null) {
+    		em.refresh(t);
+    		em.remove(t);
+    		em.flush();
+    	}
+    	return t;
+    }
+
+    private <T extends PojoBase> T updateEntityById(Class< T> entity, String queryName, int id, T updatingEntity ) {
+    	T tToBeUpdated = getEntityById(entity, queryName, id);
+    	if(tToBeUpdated != null) {
+    		em.refresh(tToBeUpdated);
+            em.merge(updatingEntity);
+            em.flush();
+    	}
+    	return tToBeUpdated;
+    }
 }

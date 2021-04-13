@@ -42,6 +42,8 @@ public interface MyConstants {
     public static final String ORDERLINE_RESOURCE_NAME =  "orderLine";
     public static final String PRODUCT_RESOURCE_NAME =  "product";
     public static final String BLOODBANK_RESOURCE_NAME =  "bloodbank";
+    public static final String ADDRESS_RESOURCE_NAME =  "address";
+    public static final String BLOODBANK_BLOODDONATION_RESOURCE_PATH =  RESOURCE_PATH_ID_PATH + SLASH + BLOOD_DONATION_RESOURCE_NAME;
     public static final String CUSTOMER_ADDRESS_SUBRESOURCE_NAME =  "address";
     public static final String CUSTOMER_ADDRESS_RESOURCE_PATH =
         RESOURCE_PATH_ID_PATH + SLASH + CUSTOMER_ADDRESS_SUBRESOURCE_NAME;

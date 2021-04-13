@@ -17,16 +17,22 @@ import javax.persistence.Table;
 
 import org.hibernate.Hibernate;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 /**
  * The persistent class for the phone database table.
  */
 @Entity
 @Table( name = "phone")
-@NamedQuery( name = "Phone.findAll", query = "SELECT p FROM Phone p")
+@NamedQuery( name = Phone.ALL_PHONES_QUERY_NAME, query = "SELECT distinct p FROM Phone p left JOIN FETCH p.contacts")
+@NamedQuery( name = Phone.GET_PHONE_BY_ID_QUERY_NAME, query = "SELECT p FROM Phone p left JOIN FETCH p.contacts where p.id=:param1")
 @AttributeOverride( name = "id", column = @Column( name = "phone_id"))
 public class Phone extends PojoBase implements Serializable {
 	private static final long serialVersionUID = 1L;
 
+	public static final String ALL_PHONES_QUERY_NAME = "Phone.findAll";
+	public static final String GET_PHONE_BY_ID_QUERY_NAME = "Phone.findById";
+	
 	@Basic( optional = false)
 	@Column( name = "area_code", nullable = false, length = 10)
 	private String areaCode;
@@ -39,8 +45,9 @@ public class Phone extends PojoBase implements Serializable {
 	@Column( nullable = false, length = 10)
 	private String number;
 
-	@OneToMany( cascade = { CascadeType.MERGE, CascadeType.REFRESH }, mappedBy = "phone", fetch = FetchType.LAZY)
+	@OneToMany( cascade = { CascadeType.MERGE, CascadeType.REFRESH }, mappedBy = "phone",  fetch = FetchType.LAZY)
 //	@JoinColumn( name = "phone_id", referencedColumnName = "phone_id", insertable = false, updatable = false)
+	@JsonIgnore
 	private Set< Contact> contacts = new HashSet<>();
 
 	public Phone setNumber( String countryCode, String areaCode, String number) {
