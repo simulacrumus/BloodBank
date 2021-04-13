@@ -7,10 +7,11 @@
 package bloodbank.rest.resource;
 
 import static bloodbank.utility.MyConstants.BLOODBANK_RESOURCE_NAME;
+import static bloodbank.utility.MyConstants.BLOOD_DONATION_RESOURCE_NAME;
 import static bloodbank.utility.MyConstants.RESOURCE_PATH_ID_ELEMENT;
 import static bloodbank.utility.MyConstants.RESOURCE_PATH_ID_PATH;
-import static bloodbank.utility.MyConstants.USER_ROLE;
 import static bloodbank.utility.MyConstants.ADMIN_ROLE;
+import static bloodbank.utility.MyConstants.BLOODBANK_BLOODDONATION_RESOURCE_PATH;
 
 import java.util.List;
 
@@ -35,6 +36,8 @@ import org.apache.logging.log4j.Logger;
 
 import bloodbank.ejb.BloodBankService;
 import bloodbank.entity.BloodBank;
+import bloodbank.entity.BloodDonation;
+import bloodbank.entity.Phone;
 
 @Path(BLOODBANK_RESOURCE_NAME)
 @Consumes( MediaType.APPLICATION_JSON)
@@ -50,7 +53,7 @@ public class BloodBankResource {
 	protected SecurityContext sc;
 
 	@GET
-    @RolesAllowed({ADMIN_ROLE, USER_ROLE})
+    @RolesAllowed({ADMIN_ROLE})
 	public Response getBloodBanks() {
 		LOG.debug( "retrieving all blood banks ...");
 		List< BloodBank> bloodBanks = service.getAllBloodBanks();
@@ -62,46 +65,73 @@ public class BloodBankResource {
 	@RolesAllowed( { ADMIN_ROLE })
 	@Path( RESOURCE_PATH_ID_PATH)
 	public Response getBloodBankById( @PathParam( RESOURCE_PATH_ID_ELEMENT) int id) {
-		LOG.debug( "try to retrieve specific blood bank " + id);
-		Response response = null;
-		BloodBank bloodBank = null;
-		if ( sc.isCallerInRole( ADMIN_ROLE)) {
-			bloodBank = service.getBloodBankById(id);
-			response = Response.status( bloodBank == null ? Status.NOT_FOUND : Status.OK).entity( bloodBank).build();
-		} else {
-			response = Response.status( Status.BAD_REQUEST).build();
-			LOG.debug( "Admin role required!");
-		}
+		LOG.debug( "try to retrieve specific blood bank " + id);	
+		BloodBank bloodBank = service.getBloodBankById(id);
+		Response response = Response.status( bloodBank == null ? Status.NOT_FOUND : Status.OK).entity( bloodBank).build();
 		return response;
 	}
-
+	
 	@POST
 	@RolesAllowed( { ADMIN_ROLE })
 	public Response addBloodBank( BloodBank newBloodBank) {
-		Response response = null;
-		BloodBank addedBloodbank = service.persistBloodBank( newBloodBank);
-		response = Response.ok( addedBloodbank).build();
-		return response;
-	}	
+		LOG.debug( "add a new bloodbank");
+		if(service.isBloodBankDuplicated(newBloodBank)) {
+			HttpErrorResponse error = new HttpErrorResponse(Status.CONFLICT.getStatusCode(), "entity already exists");
+			return Response.status(Status.CONFLICT).entity(error).build();
+		} else {
+			BloodBank addedBloodbank = service.persistBloodBank( newBloodBank);
+			Response response = Response.ok( addedBloodbank).build();
+			return response;
+		}
+	}
+	
 	
 	@DELETE
 	@RolesAllowed( { ADMIN_ROLE })
 	@Path( RESOURCE_PATH_ID_PATH)
 	public Response deleteBloodBankById( @PathParam( RESOURCE_PATH_ID_ELEMENT) int id) {
-		Response response = null;
+		LOG.debug( "deleteing bloodbank " + id);
 		BloodBank deletedBloodBank = service.deleteBloodBankById(id);
-		response = Response.ok( deletedBloodBank).build();
+		Response response = Response.ok( deletedBloodBank).build();
+		return response;
+	}	
+
+	@POST
+	@RolesAllowed( { ADMIN_ROLE })
+	@Path( BLOODBANK_BLOODDONATION_RESOURCE_PATH)
+	public Response addBloodDonationByBankId( @PathParam( RESOURCE_PATH_ID_ELEMENT) int bankId, BloodDonation newBloodDonation) {
+		LOG.debug( "add a new blood donation");
+		BloodBank bloodBank = service.getBloodBankById(bankId);
+		if(bloodBank == null) {
+			HttpErrorResponse error = new HttpErrorResponse(Status.NOT_FOUND.getStatusCode(), "blood bank with id " + bankId + " does not exist");
+			return Response.status(Status.NOT_FOUND).entity(error).build();
+		} else {
+			BloodDonation addedBloodDonation = service.persistBloodDonation(newBloodDonation, bankId);
+			Response response = Response.ok( addedBloodDonation).build();
+			return response;
+		}
+	}
+	
+	@GET
+	@RolesAllowed( { ADMIN_ROLE })
+	@Path( "/"+BLOOD_DONATION_RESOURCE_NAME)
+	public Response getAllBloodDonations() {
+		LOG.debug( "retrieving all blood donations ...");
+		List< BloodDonation> bloodDonations = service.getAllBloodDonations();
+		Response response = Response.ok( bloodDonations).build();
 		return response;
 	}
 	
-	@PUT
+	@GET
 	@RolesAllowed( { ADMIN_ROLE })
-	@Path( RESOURCE_PATH_ID_PATH)
-	public Response updateBloodBankById( @PathParam( RESOURCE_PATH_ID_ELEMENT) int id,  BloodBank newBloodBank) {
-		Response response = null;
-		BloodBank deletedBloodBank = service.updateBloodBankById(id,newBloodBank);
-		response = Response.ok( deletedBloodBank).build();
+	@Path( "/"+BLOOD_DONATION_RESOURCE_NAME+RESOURCE_PATH_ID_PATH)
+	public Response getBloodDonationById(@PathParam( RESOURCE_PATH_ID_ELEMENT) int id) {
+		LOG.debug( "try to retrieve specific blood donation " + id);
+		BloodDonation bloodDonation =service.getBloodDonationById(id);
+		Response response = Response.status( bloodDonation == null ? Status.NOT_FOUND : Status.OK).entity( bloodDonation).build();
 		return response;
 	}
+	
+	
 	
 }

@@ -1,12 +1,12 @@
 /**
- * File: DonationRecordResource.java Course materials (21W) CST 8277
+ * File: AddressResource.java Course materials (21W) CST 8277
  *
  * @author Emrah Kinay
  * @author (original) Mike Norman update by : I. Am. A. Student 040nnnnnnn
  */
 package bloodbank.rest.resource;
 
-import static bloodbank.utility.MyConstants.DONATION_RECORD_RESOURCE_NAME;
+import static bloodbank.utility.MyConstants.ADDRESS_RESOURCE_NAME;
 import static bloodbank.utility.MyConstants.RESOURCE_PATH_ID_ELEMENT;
 import static bloodbank.utility.MyConstants.RESOURCE_PATH_ID_PATH;
 import static bloodbank.utility.MyConstants.USER_ROLE;
@@ -34,66 +34,66 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import bloodbank.ejb.BloodBankService;
-import bloodbank.entity.DonationRecord;
+import bloodbank.entity.Address;
+import bloodbank.entity.Phone;
 
-@Path(DONATION_RECORD_RESOURCE_NAME)
+@Path(ADDRESS_RESOURCE_NAME)
 @Consumes( MediaType.APPLICATION_JSON)
 @Produces( MediaType.APPLICATION_JSON)
-public class DonationRecordResource {
+public class AddressResource {
 
 	private static final Logger LOG = LogManager.getLogger();
 
 	@EJB
 	protected BloodBankService service;
-
+	
 	@Inject
 	protected SecurityContext sc;
 
 	@GET
     @RolesAllowed({ADMIN_ROLE, USER_ROLE})
-	public Response getDonationRecords() {
-		LOG.debug( "retrieving all donation records ...");
-		List< DonationRecord> donationRecords = service.getAllDonationRecords();
-		Response response = Response.ok( donationRecords).build();
+	public Response getAddresses() {
+		LOG.debug( "retrieving all addresses ...");
+		List< Address> addresses = service.getAllAddresses();
+		Response response = Response.ok( addresses).build();
 		return response;
 	}
 
 	@GET
 	@RolesAllowed( { ADMIN_ROLE })
 	@Path( RESOURCE_PATH_ID_PATH)
-	public Response getDonationRecordById( @PathParam( RESOURCE_PATH_ID_ELEMENT) int id) {
-		LOG.debug( "try to retrieve specific donation record " + id);
-		DonationRecord donationRecord = service.getDonationRecordById(id);
-		Response response = Response.status( donationRecord == null ? Status.NOT_FOUND : Status.OK).entity( donationRecord).build();;
+	public Response getAddressById( @PathParam( RESOURCE_PATH_ID_ELEMENT) int id) {
+		LOG.debug( "try to retrieve specific address " + id);	
+		Address address = service.getAddressById(id);
+		Response response = Response.status( address == null ? Status.NOT_FOUND : Status.OK).entity( address).build();
 		return response;
 	}
 
 	@POST
 	@RolesAllowed( { ADMIN_ROLE })
-	public Response addDonationRecord( DonationRecord newDonationRecord) {
-		Response response = null;
-		DonationRecord addedDonationRecord = service.persistDonationRecord( newDonationRecord);
-		response = Response.ok( addedDonationRecord).build();
+	public Response addAddress( Address newAddress) {
+		LOG.debug( "add a new address");
+		Address addedAddress = service.persistAddress( newAddress);
+		Response response = Response.ok( addedAddress).build();
 		return response;
 	}	
 	
 	@DELETE
 	@RolesAllowed( { ADMIN_ROLE })
 	@Path( RESOURCE_PATH_ID_PATH)
-	public Response deleteDonationRecordById( @PathParam( RESOURCE_PATH_ID_ELEMENT) int id) {
-		Response response = null;
-		DonationRecord deletedDonationRecord = service.deleteDonationRecordById(id);
-		response = Response.ok( deletedDonationRecord).build();
+	public Response deleteAddressById( @PathParam( RESOURCE_PATH_ID_ELEMENT) int id) {
+		Address deletedAddress = service.deleteAddressById(id);
+		Response response = Response.ok( deletedAddress).build();
 		return response;
 	}
 	
 	@PUT
 	@RolesAllowed( { ADMIN_ROLE })
 	@Path( RESOURCE_PATH_ID_PATH)
-	public Response updateDonationRecordById( @PathParam( RESOURCE_PATH_ID_ELEMENT) int id,  DonationRecord newDonationRecord) {
+	public Response updateAddressById( @PathParam( RESOURCE_PATH_ID_ELEMENT) int id,  Address updatingAddress) {
 		Response response = null;
-		DonationRecord deletedDonationRecord = service.updateDonationRecordById(id,newDonationRecord);
-		response = Response.ok( deletedDonationRecord).build();
+		Address updatedAddress = service.updateAddressById(id, updatingAddress);
+		response = Response.ok( updatedAddress).build();
 		return response;
 	}
 	

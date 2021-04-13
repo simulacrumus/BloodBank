@@ -23,13 +23,15 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
  */
 @Entity
 @Table( name = "person")
-@NamedQuery( name = Person.ALL_PERSONS_QUERY_NAME, query = "SELECT p FROM Person p left JOIN FETCH p.donations left JOIN FETCH p.contacts")
+@NamedQuery( name = Person.ALL_PERSONS_QUERY_NAME, query = "SELECT distinct p FROM Person p left JOIN FETCH p.donations left JOIN FETCH p.contacts")
+@NamedQuery( name = Person.GET_PERSION_BY_ID_QUERY_NAME, query = "SELECT p FROM Person p left JOIN FETCH p.donations left JOIN FETCH p.contacts where p.id=:param1")
 //@AttributeOverride( name = "id", column = @Column( name = "id"))
 //no need for AttributeOverride as person is column is called id as well.
 public class Person extends PojoBase implements Serializable {
 	private static final long serialVersionUID = 1L;
 	
 	public static final String ALL_PERSONS_QUERY_NAME = "Person.findAll";
+	public static final String GET_PERSION_BY_ID_QUERY_NAME = "Person.findById";
 
 	@Basic( optional = false)
 	@Column( name = "first_name", nullable = false, length = 50)

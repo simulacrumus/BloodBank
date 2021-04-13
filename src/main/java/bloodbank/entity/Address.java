@@ -17,6 +17,8 @@ import javax.persistence.Table;
 
 import org.hibernate.Hibernate;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 /**
  * The persistent class for the address database table.
  */
@@ -29,13 +31,17 @@ import org.hibernate.Hibernate;
 //Hint - @NamedQuery attached to this class which uses JPQL/HQL. SQL cannot be used with NamedQuery.
 //Hint - @NamedQuery uses the name which is defined in @Entity for JPQL, if no name is defined use class name.
 //Hint - @NamedNativeQuery can optionally be used if there is a need for SQL query.
-@NamedQuery( name = "Address.findAll", query = "SELECT a FROM Address a")
+@NamedQuery( name = Address.ALL_ADDRESSES_QUERY_NAME, query = "SELECT distinct a FROM Address a left join fetch a.contacts")
+@NamedQuery( name = Address.GET_ADDRESSS_BY_ID_QUERY_NAME, query = "SELECT distinct a FROM Address a left join fetch a.contacts where a.id=:param1")
 //Hint - @AttributeOverride can overrides column details. This Entity uses address_id as its primary key name, it needs to override the name in the mapped super class.
 @AttributeOverride( name = "id", column = @Column( name = "address_id"))
 //Hint - PojoBase is inherited by any entity with integer as their primary key.
 //Hint - PojoBaseCompositeKey is inherited by any entity with a composite key as their primary key.
 public class Address extends PojoBase implements Serializable {
 	private static final long serialVersionUID = 1L;
+	
+	public static final String ALL_ADDRESSES_QUERY_NAME = "Address.findAll";
+	public static final String GET_ADDRESSS_BY_ID_QUERY_NAME = "Address.findById";
 
 	// Hint - @Basic( optional = false) is used when the object cannot be null.
 	// Hint - @Basic or none can be used if the object can be null.
@@ -78,6 +84,7 @@ public class Address extends PojoBase implements Serializable {
 //	@JoinColumn( name = "address_id", referencedColumnName = "address_id", insertable = false, updatable = false)
 	// Hint - java.util.Set is used as a collection, however List could have been used as well.
 	// Hint - java.util.Set will be unique and also possibly can provide better get performance with HashCode.
+	@JsonIgnore
 	private Set< Contact> contacts = new HashSet<>();
 
 	public Address() {
