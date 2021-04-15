@@ -51,6 +51,8 @@ public interface MyConstants {
     //Security constants
     public static final String USER_ROLE = "USER_ROLE";
     public static final String ADMIN_ROLE = "ADMIN_ROLE";
+    //Error message for in response to request made with improper roles/permissions
+    public static final String ACCESS_UNAUTHORIZED = "Unauthorized";
     public static final String ACCESS_REQUIRES_AUTHENTICATION =
         "Access requires Authentication";
     public static final String ACCESS_TO_THE_SPECIFIED_RESOURCE_HAS_BEEN_FORBIDDEN =

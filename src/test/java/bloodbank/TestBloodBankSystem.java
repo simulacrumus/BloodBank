@@ -5,7 +5,7 @@
  *
  * @date 2020 10
  *
- * (Modified) @author Student Name
+ * (Modified) @author Jephte Francois
  */
 package bloodbank;
 
@@ -15,11 +15,13 @@ import static bloodbank.utility.MyConstants.DEFAULT_ADMIN_USER_PASSWORD;
 import static bloodbank.utility.MyConstants.DEFAULT_USER_PASSWORD;
 import static bloodbank.utility.MyConstants.DEFAULT_USER_PREFIX;
 import static bloodbank.utility.MyConstants.PERSON_RESOURCE_NAME;
+import static bloodbank.utility.MyConstants.ACCESS_UNAUTHORIZED;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
 import static org.hamcrest.collection.IsEmptyCollection.empty;
+import static org.hamcrest.Matchers.equalTo;
 
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
@@ -27,6 +29,7 @@ import java.util.List;
 
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.Response;
@@ -53,7 +56,7 @@ public class TestBloodBankSystem {
     private static final Class<?> _thisClaz = MethodHandles.lookup().lookupClass();
     private static final Logger logger = LogManager.getLogger(_thisClaz);
 
-    static final String APPLICATION_CONTEXT_ROOT = "REST-BloodBank";
+    static final String APPLICATION_CONTEXT_ROOT = "REST-BloodBank-Skeleton";
     static final String HTTP_SCHEMA = "http";
     static final String HOST = "localhost";
     static final int PORT = 8080;
@@ -97,4 +100,29 @@ public class TestBloodBankSystem {
         assertThat(emps, is(not(empty())));
         assertThat(emps, hasSize(1));
     }
+    
+    @Test
+    public void test02_all_customers_user_role() throws JsonMappingException, JsonProcessingException {
+        Response response = webTarget
+            .register(userAuth)
+            .path(PERSON_RESOURCE_NAME)
+            .request()
+            .get();
+        assertThat(response.getStatus(), is((401)));
+        assertThat(response.getStatusInfo().getReasonPhrase(), is(equalTo(ACCESS_UNAUTHORIZED)));
+    }
+    
+ //*** THIS CODE ISEXPERIMENTAL   
+//    @Test
+//    public void test03_get_customer_by_id() throws JsonMappingException, JsonProcessingException {
+//    	Person newPerson = new Person();
+//    	newPerson.setFullName("Jack", "Ryan");
+//        Response response = webTarget
+//            	.register(adminAuth)	
+//                .path(PERSON_RESOURCE_NAME)
+//                .request()
+//                .post(Entity.json(newPerson));
+//        
+//        assertThat(response.getStatus(), is((200)));
+//    }
 }
