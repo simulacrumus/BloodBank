@@ -15,6 +15,7 @@ import static bloodbank.entity.SecurityUser.USER_FOR_OWNING_PERSON_QUERY;
 
 import java.io.Serializable;
 import java.security.Principal;
+import java.util.HashSet;
 import java.util.Set;
 
 import javax.persistence.Access;
@@ -77,7 +78,7 @@ public class SecurityUser implements Serializable, Principal {
     @ManyToMany( cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REFRESH}, fetch = FetchType.LAZY)
     @JoinTable(name = "user_has_role", joinColumns = @JoinColumn(name = "user_id", referencedColumnName = "user_id"),
     inverseJoinColumns = @JoinColumn(name = "role_id", referencedColumnName = "role_id"))
-    protected Set<SecurityRole> roles;
+    protected Set<SecurityRole> roles = new HashSet<SecurityRole>();;
 
     public SecurityUser() {
         super();

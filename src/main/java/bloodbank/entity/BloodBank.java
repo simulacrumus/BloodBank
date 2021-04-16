@@ -31,12 +31,12 @@ import bloodbank.rest.serializer.BloodBankSerializer;
  * The persistent class for the blood_bank database table.
  */
 @Entity
+@AttributeOverride( name = "id", column = @Column( name = "bank_id"))
 @Table( name = "blood_bank")
 @NamedQuery( name = BloodBank.ALL_BLOODBANKS_QUERY_NAME, query = "SELECT distinct b FROM BloodBank b left JOIN FETCH b.donations")
 @NamedQuery( name = BloodBank.IS_DUPLICATE_QUERY_NAME, query = "SELECT count(b) FROM BloodBank b where b.name=:param1")
-@NamedQuery( name = BloodBank.GET_BLOODBANK_BY_ID_QUERY_NAME, query = "SELECT b FROM BloodBank b left JOIN FETCH b.donations where b.id=:param1")
+@NamedQuery( name = BloodBank.GET_BLOODBANK_BY_ID_QUERY_NAME, query = "SELECT distinct b FROM BloodBank b left JOIN FETCH b.donations where b.id=:param1")
 @Inheritance( strategy = InheritanceType.SINGLE_TABLE)
-@AttributeOverride( name = "id", column = @Column( name = "bank_id"))
 //columnDefinition, discriminatorType
 @DiscriminatorColumn( columnDefinition = "bit(1)", name = "privately_owned", discriminatorType = DiscriminatorType.INTEGER)
 @JsonSerialize(using = BloodBankSerializer.class)
@@ -59,6 +59,10 @@ public abstract class BloodBank extends PojoBase implements Serializable {
 
 	@Transient
 	private boolean isPublic;
+	
+	protected BloodBank() {
+		this.isPublic = true;
+	}
 	
 	protected BloodBank( boolean isPublic) {
 		this.isPublic = isPublic;

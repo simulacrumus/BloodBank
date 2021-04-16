@@ -25,9 +25,9 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
  */
 @Entity
 @Table( name = "blood_donation")
-@NamedQuery( name = BloodDonation.ALL_BLOOD_DONATION_QUERY_NAME, query = "SELECT distinct b FROM BloodDonation b left join fetch b.record left join fetch b.bank c left join fetch c.donations")
-@NamedQuery( name = BloodDonation.BLOOD_DONATION_BY_ID_QUERY_NAME, query = "SELECT distinct b FROM BloodDonation b left join fetch b.record left join fetch b.bank c left join fetch c.donations where b.id=:param1")
 @AttributeOverride( name = "id", column = @Column( name = "donation_id"))
+@NamedQuery( name = BloodDonation.ALL_BLOOD_DONATION_QUERY_NAME, query = "SELECT distinct d FROM BloodDonation d left JOIN FETCH d.bank")
+@NamedQuery( name = BloodDonation.BLOOD_DONATION_BY_ID_QUERY_NAME, query = "SELECT distinct d FROM BloodDonation d left JOIN FETCH d.bank where d.id=:param1")
 public class BloodDonation extends PojoBase implements Serializable {
 	private static final long serialVersionUID = 1L;
 
@@ -36,6 +36,7 @@ public class BloodDonation extends PojoBase implements Serializable {
 	
 	@ManyToOne( optional = false, cascade = { CascadeType.MERGE, CascadeType.REFRESH}, fetch = FetchType.LAZY)
 	@JoinColumn( name = "bank_id", referencedColumnName = "bank_id")
+	@JsonIgnore
 	private BloodBank bank;
 
 	@OneToOne( fetch = FetchType.LAZY, cascade = { CascadeType.MERGE, CascadeType.REFRESH}, optional = true, mappedBy = "donation")

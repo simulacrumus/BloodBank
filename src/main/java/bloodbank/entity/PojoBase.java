@@ -24,6 +24,8 @@ import javax.persistence.MappedSuperclass;
 import javax.persistence.Transient;
 import javax.persistence.Version;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 /**
  * Abstract class that is base of (class) hierarchy for all @Entity classes
  */
@@ -44,10 +46,12 @@ public abstract class PojoBase implements Serializable {
 
 	@Basic( optional = false)
 	@Column( nullable = false, name = "created")
+	@JsonIgnore
 	protected long epochCreated;
 
 	@Basic( optional = false)
 	@Column( nullable = false, name = "updated")
+	@JsonIgnore
 	protected long epochUpdated;
 
 	@Transient

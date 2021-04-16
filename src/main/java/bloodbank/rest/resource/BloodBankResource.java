@@ -132,6 +132,12 @@ public class BloodBankResource {
 		return response;
 	}
 	
-	
-	
+	@DELETE
+	@RolesAllowed( { ADMIN_ROLE })
+	@Path( "/"+BLOOD_DONATION_RESOURCE_NAME+RESOURCE_PATH_ID_PATH)
+	public Response deleteBloodDonationById( @PathParam( RESOURCE_PATH_ID_ELEMENT) int id) {
+		BloodDonation deletedBloodDonation = service.deleteBloodDonationById(id);
+		Response response = Response.ok( deletedBloodDonation).build();
+		return response;
+	}
 }

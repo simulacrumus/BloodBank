@@ -35,6 +35,7 @@ import org.apache.logging.log4j.Logger;
 
 import bloodbank.ejb.BloodBankService;
 import bloodbank.entity.BloodDonation;
+import bloodbank.entity.DonationRecord;
 
 @Path(BLOOD_DONATION_RESOURCE_NAME)
 @Consumes( MediaType.APPLICATION_JSON)
@@ -77,14 +78,13 @@ public class BloodDonationResource {
 		return response;
 	}
 	
-//	@PUT
-//	@RolesAllowed( { ADMIN_ROLE })
-//	@Path( RESOURCE_PATH_ID_PATH)
-//	public Response updateBloodDonationById( @PathParam( RESOURCE_PATH_ID_ELEMENT) int id,  BloodDonation newBloodDonation) {
-//		Response response = null;
-//		BloodDonation deletedBloodDonation = service.updateBloodDonationById(id,newBloodDonation);
-//		response = Response.ok( deletedBloodDonation).build();
-//		return response;
-//	}
+	@POST
+	@RolesAllowed( { ADMIN_ROLE })
+	@Path( RESOURCE_PATH_ID_PATH + "/{personId}" )
+	public Response addDonationRecord(@PathParam( RESOURCE_PATH_ID_ELEMENT) int bloodDonationId, @PathParam( "personId") int personId, DonationRecord newDonationRecord) { 
+		DonationRecord addedDonationRecord = service.persistDonationRecord( newDonationRecord, bloodDonationId, personId);
+		Response response = Response.ok( addedDonationRecord).build();
+		return response;
+	}
 	
 }

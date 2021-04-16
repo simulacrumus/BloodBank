@@ -43,16 +43,24 @@ public class BloodBankDeserializer extends StdDeserializer< BloodBank> implement
 	@Override
 	public BloodBank deserialize( JsonParser p, DeserializationContext ctxt)
 			throws IOException, JsonProcessingException {
+
 		TreeNode tn = p.readValueAsTree();
-		String name = tn.get( "name").toString().replace( "\"", "");
-		boolean isPublic = Boolean.parseBoolean( tn.get( "is_public").toString());
-		BloodBank bank = isPublic ? new PublicBloodBank() : new PrivateBloodBank();
+		BloodBank bank = new PublicBloodBank();
+		if ( tn.get( "is_public") != null) {
+			boolean isPublic = Boolean.parseBoolean( tn.get( "is_public").toString());
+			bank = isPublic ? new PublicBloodBank() : new PrivateBloodBank();
+		}
+
+		if ( tn.get( "name") != null) {
+			String name = tn.get( "name").toString().replace( "\"", "");
+			bank.setName( name);
+		}
+
 		if ( tn.get( "id") != null) {
 			// this can be used when creating another entity with bloodbank as dependency.
 			// this id can be used to get the bloodbank from DB again and set it your object.
 			bank.setId( Integer.valueOf( tn.get( "id").toString()));
 		}
-		bank.setName( name);
 		return bank;
 	}
 

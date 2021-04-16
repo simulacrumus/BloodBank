@@ -17,14 +17,20 @@ import javax.persistence.Table;
 
 import org.hibernate.Hibernate;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 /**
  * The persistent class for the contact database table.
  */
 @Entity
 @Table( name = "contact")
-@NamedQuery( name = "Contact.findAll", query = "SELECT c FROM Contact c")
+@NamedQuery( name = Contact.ALL_CONTACTS_QUERY_NAME, query = "SELECT distinct c FROM Contact c")
+//@NamedQuery( name = Contact.GET_CONTACT_BY_ID_QUERY_NAME, query = "SELECT distinct c FROM Contact c LEFT JOIN FETCH c.phone LEFT JOIN FETCH c.address LEFT JOIN FETCH c.owner where c.person_id=:param1 and c.phone_id=:param2")
 public class Contact extends PojoBaseCompositeKey< ContactPK> implements Serializable {
 	private static final long serialVersionUID = 1L;
+	
+	public static final String ALL_CONTACTS_QUERY_NAME = "Contact.findAll";
+	public static final String GET_CONTACT_BY_ID_QUERY_NAME = "Contact.findById";
 
 	@EmbeddedId
 	private ContactPK id;
@@ -32,15 +38,18 @@ public class Contact extends PojoBaseCompositeKey< ContactPK> implements Seriali
 	@MapsId( "personId")
 	@ManyToOne( cascade = { CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REFRESH }, optional = false, fetch = FetchType.LAZY)
 	@JoinColumn( name = "person_id", referencedColumnName = "id", nullable = false)
+	@JsonIgnore
 	private Person owner;
 
 	@MapsId( "phoneId")
 	@ManyToOne( cascade = { CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REFRESH }, optional = false, fetch = FetchType.LAZY)
 	@JoinColumn( name = "phone_id", referencedColumnName = "phone_id", nullable = false)
+	@JsonIgnore
 	private Phone phone;
-
+	
 	@ManyToOne( cascade = { CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REFRESH }, optional = true, fetch = FetchType.LAZY)
 	@JoinColumn( name = "address_id", referencedColumnName = "address_id", nullable = true)
+	@JsonIgnore
 	private Address address;
 
 	@Column( length = 100, name = "email")
@@ -69,7 +78,8 @@ public class Contact extends PojoBaseCompositeKey< ContactPK> implements Seriali
 	}
 
 	public void setOwner( Person owner) {
-		id.setPersonId( owner.id);
+		if(owner != null)
+			id.setPersonId( owner.id);
 		this.owner = owner;
 	}
 
@@ -78,7 +88,8 @@ public class Contact extends PojoBaseCompositeKey< ContactPK> implements Seriali
 	}
 
 	public void setPhone( Phone phone) {
-		id.setPhoneId( phone.id);
+		if(phone != null)
+			id.setPhoneId( phone.id);
 		this.phone = phone;
 	}
 

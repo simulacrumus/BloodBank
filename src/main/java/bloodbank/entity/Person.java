@@ -24,7 +24,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 @Entity
 @Table( name = "person")
 @NamedQuery( name = Person.ALL_PERSONS_QUERY_NAME, query = "SELECT distinct p FROM Person p left JOIN FETCH p.donations left JOIN FETCH p.contacts")
-@NamedQuery( name = Person.GET_PERSION_BY_ID_QUERY_NAME, query = "SELECT p FROM Person p left JOIN FETCH p.donations left JOIN FETCH p.contacts where p.id=:param1")
+@NamedQuery( name = Person.GET_PERSION_BY_ID_QUERY_NAME, query = "SELECT distinct p FROM Person p left JOIN FETCH p.donations where p.id=:param1")
 //@AttributeOverride( name = "id", column = @Column( name = "id"))
 //no need for AttributeOverride as person is column is called id as well.
 public class Person extends PojoBase implements Serializable {
@@ -43,10 +43,12 @@ public class Person extends PojoBase implements Serializable {
 
 	@OneToMany( cascade = { CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH }, mappedBy = "owner", fetch = FetchType.LAZY)
 //	@JoinColumn( name = "person_id", referencedColumnName = "id", insertable = false, updatable = false)
+	@JsonIgnore
 	private Set< DonationRecord> donations = new HashSet<>();
-
+	
 	@OneToMany( cascade = { CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH }, mappedBy = "owner", fetch = FetchType.LAZY)
 //	@JoinColumn( name = "person_id", referencedColumnName = "id", insertable = false, updatable = false)
+	@JsonIgnore
 	private Set< Contact> contacts = new HashSet<>();
 
 	public String getFirstName() {
@@ -65,7 +67,6 @@ public class Person extends PojoBase implements Serializable {
 		this.lastName = lastName;
 	}
 
-	@JsonIgnore
 	public Set< DonationRecord> getDonations() {
 		return donations;
 	}
@@ -74,7 +75,6 @@ public class Person extends PojoBase implements Serializable {
 		this.donations = donations;
 	}
 
-	@JsonIgnore
 	public Set< Contact> getContacts() {
 		return contacts;
 	}
