@@ -39,6 +39,7 @@ import java.util.Set;
 import javax.ejb.Singleton;
 import javax.inject.Inject;
 import javax.persistence.EntityManager;
+import javax.persistence.NoResultException;
 import javax.persistence.PersistenceContext;
 import javax.persistence.TypedQuery;
 import javax.persistence.criteria.CriteriaBuilder;
@@ -177,7 +178,7 @@ public class BloodBankService implements Serializable {
     
     @Transactional
     public BloodBank deleteBloodBankById(int id) {
-    	BloodBank bloodBank = getEntityById(BloodBank.class, BloodBank.GET_BLOODBANK_BY_ID_QUERY_NAME, id);
+    	BloodBank bloodBank = getBloodBankById(id);
     	bloodBank.getDonations().forEach(donation -> {
     		if(donation.getRecord() != null) {
     			DonationRecord donationRecord = getEntityById(DonationRecord.class, DonationRecord.GET_RECORD_BY_ID_QUERY_NAME, id);
@@ -208,6 +209,13 @@ public class BloodBankService implements Serializable {
     
     @Transactional
     public Phone deletePhoneById(int id) {
+    	Phone phone = getPhoneById(id);
+    	phone.getContacts().forEach(contact -> {
+    		em.refresh(contact);
+    		em.remove(contact);
+    		em.flush();
+    	});
+    	phone.setContacts(null);
     	return deleteEntityById(Phone.class, Phone.GET_PHONE_BY_ID_QUERY_NAME, id);
     }
     
@@ -218,12 +226,15 @@ public class BloodBankService implements Serializable {
     
     @Transactional
     public Phone updatePhoneById(int id, Phone updatingPhone) {
-    	Phone phoneToBeUpdated = getEntityById(Phone.class, Phone.GET_PHONE_BY_ID_QUERY_NAME, id);
+    	Phone phoneToBeUpdated = getPhoneById(id);
     	if(phoneToBeUpdated != null) {
     		em.refresh(phoneToBeUpdated);
-    		phoneToBeUpdated.setAreaCode(updatingPhone.getAreaCode());
-    		phoneToBeUpdated.setCountryCode(updatingPhone.getCountryCode());
-    		phoneToBeUpdated.setNumber(updatingPhone.getNumber());
+    		if(updatingPhone.getAreaCode() != null && updatingPhone.getAreaCode().trim().equals(""))
+    			phoneToBeUpdated.setAreaCode(updatingPhone.getAreaCode());
+    		if(updatingPhone.getCountryCode() != null && updatingPhone.getCountryCode().trim().equals(""))
+    			phoneToBeUpdated.setCountryCode(updatingPhone.getCountryCode());
+    		if(updatingPhone.getNumber() != null && updatingPhone.getNumber().trim().equals(""))
+    			phoneToBeUpdated.setNumber(updatingPhone.getNumber());
     		em.merge(phoneToBeUpdated);
     		em.flush();
     	}
@@ -237,7 +248,7 @@ public class BloodBankService implements Serializable {
     	return getAllEntities( Address.class, Address.ALL_ADDRESSES_QUERY_NAME);
     }
     
-    public Address getAddressById(int id) {
+    public Address getAddressById(int id) throws NoResultException {
     	return getEntityById(Address.class, Address.GET_ADDRESSS_BY_ID_QUERY_NAME, id);
     }
     
@@ -253,7 +264,7 @@ public class BloodBankService implements Serializable {
     
     @Transactional
     public Address updateAddressById(int id, Address updatingAddress) {
-    	Address addressToBeUpdated = getEntityById(Address.class, Address.GET_ADDRESSS_BY_ID_QUERY_NAME, id);
+    	Address addressToBeUpdated = getAddressById(id);
     	if(addressToBeUpdated != null) {
     		em.refresh(addressToBeUpdated);
     		addressToBeUpdated.setAddress(
@@ -283,12 +294,13 @@ public class BloodBankService implements Serializable {
     
     @Transactional
     public BloodDonation deleteBloodDonationById(int id) {
-    	BloodDonation bloodDonation = getEntityById( BloodDonation.class, BloodDonation.BLOOD_DONATION_BY_ID_QUERY_NAME, id);
+    	BloodDonation bloodDonation = getBloodDonationById(id);
     	BloodBank bloodBank = bloodDonation.getBank();
     	bloodBank.getDonations().remove(bloodDonation);
     	bloodDonation.setBank(null);
     	DonationRecord donationRecord = bloodDonation.getRecord();
-    	donationRecord.setDonation(null);
+    	if(donationRecord !=null)
+    		donationRecord.setDonation(null);
     	em.refresh(bloodDonation);
 		em.remove(bloodDonation);
 		em.flush();
@@ -297,7 +309,7 @@ public class BloodBankService implements Serializable {
     
     @Transactional
     public BloodDonation persistBloodDonation(BloodDonation newBloodDonation, int bloodBankId) {
-    	BloodBank bank = getEntityById(BloodBank.class, BloodBank.GET_BLOODBANK_BY_ID_QUERY_NAME, bloodBankId);
+    	BloodBank bank = getBloodBankById(bloodBankId);
     	newBloodDonation.setBank(bank);
     	bank.getDonations().add(newBloodDonation);
     	em.merge(bank);
@@ -317,8 +329,8 @@ public class BloodBankService implements Serializable {
     
     @Transactional
     public DonationRecord deleteDonationRecordById(int id) {
-    	DonationRecord donationRecord = getEntityById(DonationRecord.class, DonationRecord.GET_RECORD_BY_ID_QUERY_NAME, id);
-    	Person person = getEntityById(Person.class, Person.GET_PERSION_BY_ID_QUERY_NAME, donationRecord.getOwner().getId());
+    	DonationRecord donationRecord = getDonationRecordById(id);
+    	Person person = getPersonById( donationRecord.getOwner().getId());
     	person.getDonations().remove(donationRecord);
     	em.refresh(person);
     	em.merge(person);
@@ -340,11 +352,8 @@ public class BloodBankService implements Serializable {
     
     @Transactional
     public DonationRecord persistDonationRecord(DonationRecord newDonationRecord, int bloodDonationId, int personId) {
-    	Person person = getEntityById(Person.class, Person.GET_PERSION_BY_ID_QUERY_NAME, personId);
-    	BloodDonation bloodDonation = null;
-    	if(bloodDonationId > 0) {
-    		bloodDonation = getEntityById(BloodDonation.class, BloodDonation.BLOOD_DONATION_BY_ID_QUERY_NAME, bloodDonationId);
-    	}
+    	Person person = getPersonById(personId);
+    	BloodDonation bloodDonation = getBloodDonationById(bloodDonationId);
     	newDonationRecord.setOwner(person);
     	newDonationRecord.setDonation(bloodDonation);
     	DonationRecord donationRecord = persistEntity(newDonationRecord);
@@ -378,9 +387,13 @@ public class BloodBankService implements Serializable {
     }
     
     private <T extends PojoBase> T getEntityById(Class< T> entity, String queryName, int id ) {
-    	TypedQuery<T> allBloodDonationsQuery = em.createNamedQuery(queryName, entity);
-    	allBloodDonationsQuery.setParameter(PARAM1, id);
-    	return allBloodDonationsQuery.getSingleResult(); 
+    	try{
+	    	TypedQuery<T> allBloodDonationsQuery = em.createNamedQuery(queryName, entity);
+	    	allBloodDonationsQuery.setParameter(PARAM1, id);
+	    	return allBloodDonationsQuery.getSingleResult();
+	    } catch (NoResultException e) {
+	    	return null;
+	    }
 	}
     
 

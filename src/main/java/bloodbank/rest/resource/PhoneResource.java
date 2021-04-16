@@ -51,7 +51,7 @@ public class PhoneResource {
 	protected SecurityContext sc;
 
 	@GET
-    @RolesAllowed({ADMIN_ROLE, USER_ROLE})
+    @RolesAllowed({ADMIN_ROLE})
 	public Response getPhones() {
 		LOG.debug( "retrieving all phones ...");
 		List<Phone > phones = service.getAllPhones();
@@ -65,6 +65,10 @@ public class PhoneResource {
 	public Response getPhoneById( @PathParam( RESOURCE_PATH_ID_ELEMENT) int id) {
 		LOG.debug( "try to retrieve specific phone " + id);
 		Phone phone =service.getPhoneById(id);
+		if(phone == null) {
+			HttpErrorResponse error = new HttpErrorResponse(Status.NOT_FOUND.getStatusCode(), "No Phone found with id " + id);
+			return Response.status(Status.NOT_FOUND).entity(error).build();
+		}
 		Response response = Response.status( phone == null ? Status.NOT_FOUND : Status.OK).entity( phone).build();
 		return response;
 	}
@@ -72,6 +76,18 @@ public class PhoneResource {
 	@POST
 	@RolesAllowed( { ADMIN_ROLE })
 	public Response addPhone( Phone newPhone) {
+		if(newPhone.getAreaCode() == null || newPhone.getAreaCode().equals("")) {
+			HttpErrorResponse error = new HttpErrorResponse(Status.BAD_REQUEST.getStatusCode(), "Area code is required");
+			return Response.status(Status.BAD_REQUEST).entity(error).build();
+		}
+		if(newPhone.getCountryCode() == null || newPhone.getCountryCode().equals("")) {
+			HttpErrorResponse error = new HttpErrorResponse(Status.BAD_REQUEST.getStatusCode(), "Country code is required");
+			return Response.status(Status.BAD_REQUEST).entity(error).build();
+		}
+		if(newPhone.getNumber() == null || newPhone.getNumber().trim().equals("")) {
+			HttpErrorResponse error = new HttpErrorResponse(Status.BAD_REQUEST.getStatusCode(), "Number is required");
+			return Response.status(Status.BAD_REQUEST).entity(error).build();
+		}
 		Phone addedPhone = service.persistPhone( newPhone);
 		Response response = Response.ok( addedPhone).build();
 		return response;
@@ -81,6 +97,11 @@ public class PhoneResource {
 	@RolesAllowed( { ADMIN_ROLE })
 	@Path( RESOURCE_PATH_ID_PATH)
 	public Response deletePhoneById( @PathParam( RESOURCE_PATH_ID_ELEMENT) int id) {
+		Phone phone = service.getPhoneById(id);
+		if(phone == null) {
+			HttpErrorResponse error = new HttpErrorResponse(Status.NOT_FOUND.getStatusCode(), "No Phone found with id " + id);
+			return Response.status(Status.NOT_FOUND).entity(error).build();
+		}
 		Phone deletedPhone = service.deletePhoneById(id);
 		Response response = Response.ok( deletedPhone).build();
 		return response;
@@ -91,9 +112,13 @@ public class PhoneResource {
 	@Path( RESOURCE_PATH_ID_PATH)
 	public Response updatePhoneById( @PathParam( RESOURCE_PATH_ID_ELEMENT) int id,  Phone newPhone) {
 		Response response = null;
+		Phone phone = service.getPhoneById(id);
+		if(phone == null) {
+			HttpErrorResponse error = new HttpErrorResponse(Status.NOT_FOUND.getStatusCode(), "No Phone found with id " + id);
+			return Response.status(Status.NOT_FOUND).entity(error).build();
+		}
 		Phone deletedPhone = service.updatePhoneById(id, newPhone);
 		response = Response.ok( deletedPhone).build();
 		return response;
 	}
-	
 }
