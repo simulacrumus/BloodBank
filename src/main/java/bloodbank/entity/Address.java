@@ -31,10 +31,10 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 //Hint - @NamedQuery attached to this class which uses JPQL/HQL. SQL cannot be used with NamedQuery.
 //Hint - @NamedQuery uses the name which is defined in @Entity for JPQL, if no name is defined use class name.
 //Hint - @NamedNativeQuery can optionally be used if there is a need for SQL query.
-@NamedQuery( name = Address.ALL_ADDRESSES_QUERY_NAME, query = "SELECT distinct a FROM Address a left join fetch a.contacts")
-@NamedQuery( name = Address.GET_ADDRESSS_BY_ID_QUERY_NAME, query = "SELECT distinct a FROM Address a left join fetch a.contacts where a.id=:param1")
-//Hint - @AttributeOverride can overrides column details. This Entity uses address_id as its primary key name, it needs to override the name in the mapped super class.
 @AttributeOverride( name = "id", column = @Column( name = "address_id"))
+@NamedQuery( name = Address.ALL_ADDRESSES_QUERY_NAME, query = "SELECT distinct a FROM Address a")
+@NamedQuery( name = Address.GET_ADDRESSS_BY_ID_QUERY_NAME, query = "SELECT distinct a FROM Address a where a.id=:param1")
+//Hint - @AttributeOverride can overrides column details. This Entity uses address_id as its primary key name, it needs to override the name in the mapped super class.
 //Hint - PojoBase is inherited by any entity with integer as their primary key.
 //Hint - PojoBaseCompositeKey is inherited by any entity with a composite key as their primary key.
 public class Address extends PojoBase implements Serializable {

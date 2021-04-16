@@ -52,7 +52,9 @@ public class BloodBankSerializer extends StdSerializer< BloodBank> implements Se
 		generator.writeStartObject();
 		generator.writeNumberField( "id", original.getId());
 		generator.writeStringField( "name", original.getName());
-		//generator.writeNumberField( "donation_count",  original.getDonations().size());
+		int count = original.getDonations()==null?0:original.getDonations().size();
+		generator.writeNumberField( "donation_count", count);
+		generator.writeBooleanField( "is_public", original.isPublic());
 		generator.writeObjectField( "created", original.getCreated());
 		generator.writeObjectField( "updated", original.getUpdated());
 		generator.writeNumberField( "version", original.getVersion());

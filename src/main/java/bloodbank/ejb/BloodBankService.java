@@ -34,6 +34,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.ejb.Singleton;
 import javax.inject.Inject;
@@ -57,6 +58,7 @@ import bloodbank.entity.BloodBank;
 import bloodbank.entity.BloodBank_;
 import bloodbank.entity.BloodDonation;
 import bloodbank.entity.BloodDonation_;
+import bloodbank.entity.Contact;
 import bloodbank.entity.DonationRecord;
 import bloodbank.entity.DonationRecord_;
 import bloodbank.entity.Person;
@@ -82,11 +84,10 @@ public class BloodBankService implements Serializable {
     @Inject
     protected Pbkdf2PasswordHash pbAndjPasswordHash;
 
+    /***** CRUD for Person *****/
+    
     public List<Person> getAllPeople() {
-    	TypedQuery<Person> getAllPeople = em
-                .createNamedQuery(ALL_PERSONS_QUERY_NAME, Person.class);
-    	return getAllPeople.getResultList();
-    	//return getAllEntities(Person.class);
+    	return getAllEntities(Person.class, Person.ALL_PERSONS_QUERY_NAME);
     }
 
     public Person getPersonById(int id) {
@@ -96,7 +97,6 @@ public class BloodBankService implements Serializable {
     @Transactional
     public Person persistPerson(Person newPerson) {
     	Person person = persistEntity(newPerson);
-    	buildUserForNewPerson( person);
     	return person;
     }
 
@@ -126,13 +126,6 @@ public class BloodBankService implements Serializable {
     	return null;
     }
 
-    /**
-     * to update a person
-     * 
-     * @param id - id of entity to update
-     * @param personWithUpdates - entity with updated information
-     * @return Entity with updated information
-     */
     @Transactional
     public Person updatePersonById(int id, Person personWithUpdates) {
         Person personToBeUpdated = getPersonById(id);
@@ -143,14 +136,9 @@ public class BloodBankService implements Serializable {
         }
         return personToBeUpdated;
     }
-
-    /**
-     * to delete a person by id
-     * 
-     * @param id - person id to delete
-     */
+    
     @Transactional
-    public void deletePersonById(int id) {
+    public Person deletePersonById(int id) {
         Person person = getPersonById(id);
         if (person != null) {
             em.refresh(person);
@@ -159,13 +147,25 @@ public class BloodBankService implements Serializable {
                 .setParameter(PARAM1, person.getId());
             SecurityUser sUser = findUser.getSingleResult();
             em.remove(sUser);
+            person.getDonations().forEach(record -> {
+            	em.refresh(record);
+        		em.remove(record);
+        		em.flush();
+            });
+            person.getContacts().forEach(contact -> {
+            	em.refresh(contact);
+        		em.remove(contact);
+        		em.flush();            	
+            });
+            em.refresh(person);
             em.remove(person);
+            em.flush();
         }
+        return person;
     }
     
     
-    //CRUD for BloodBank
-    
+    /***** CRUD for BloodBank *****/
     
     public List<BloodBank> getAllBloodBanks() {
     	return getAllEntities( BloodBank.class, BloodBank.ALL_BLOODBANKS_QUERY_NAME);
@@ -173,11 +173,6 @@ public class BloodBankService implements Serializable {
     
     public BloodBank getBloodBankById(int id) {
     	return getEntityById(BloodBank.class, BloodBank.GET_BLOODBANK_BY_ID_QUERY_NAME, id);
-    }
-    
-    @Transactional
-    public BloodBank updateBloodBankById(int id, BloodBank bloodBankWithUpdates) {
-    	return updateEntityById(BloodBank.class, BloodBank.GET_BLOODBANK_BY_ID_QUERY_NAME, id, bloodBankWithUpdates);
     }
     
     @Transactional
@@ -190,6 +185,7 @@ public class BloodBankService implements Serializable {
     		}
     		donation.setRecord(null);
     		em.merge(donation);
+    		deleteEntityById(BloodDonation.class, BloodDonation.BLOOD_DONATION_BY_ID_QUERY_NAME, donation.getId());
     	});
     	return deleteEntityById(BloodBank.class, BloodBank.GET_BLOODBANK_BY_ID_QUERY_NAME, id);
     }
@@ -201,7 +197,6 @@ public class BloodBankService implements Serializable {
 
     
     /***** CRUD for Phone *****/
-    
     
     public List<Phone> getAllPhones() {
     	return getAllEntities( Phone.class, Phone.ALL_PHONES_QUERY_NAME);
@@ -237,7 +232,6 @@ public class BloodBankService implements Serializable {
     
     
     /***** CRUD for Address *****/
-    
     
     public List<Address> getAllAddresses() {
     	return getAllEntities( Address.class, Address.ALL_ADDRESSES_QUERY_NAME);
@@ -279,7 +273,6 @@ public class BloodBankService implements Serializable {
     
     /***** CRUD for BloodDonation *****/
     
-    
     public List<BloodDonation> getAllBloodDonations() {
     	return getAllEntities( BloodDonation.class, BloodDonation.ALL_BLOOD_DONATION_QUERY_NAME);
     }
@@ -287,11 +280,6 @@ public class BloodBankService implements Serializable {
     public BloodDonation getBloodDonationById(int id) {
     	return getEntityById( BloodDonation.class, BloodDonation.BLOOD_DONATION_BY_ID_QUERY_NAME, id);
     }
-    
-//    @Transactional
-//    public BloodDonation updateBloodDonationById(int id, BloodDonation bloodDonationWithUpdates) {
-//    	return updateEntityById(BloodDonation.class, BloodDonation.BLOOD_DONATION_BY_ID_QUERY_NAME, id, bloodDonationWithUpdates);
-//    }
     
     @Transactional
     public BloodDonation deleteBloodDonationById(int id) {
@@ -312,34 +300,61 @@ public class BloodBankService implements Serializable {
     	BloodBank bank = getEntityById(BloodBank.class, BloodBank.GET_BLOODBANK_BY_ID_QUERY_NAME, bloodBankId);
     	newBloodDonation.setBank(bank);
     	bank.getDonations().add(newBloodDonation);
+    	em.merge(bank);
     	return persistEntity(newBloodDonation);
     }
     
     
     /***** CRUD for DonationRecord *****/
     
-    
     public List<DonationRecord> getAllDonationRecords() {
     	return getAllEntities(DonationRecord.class, DonationRecord.ALL_RECORDS_QUERY_NAME);
     }
     
     public DonationRecord getDonationRecordById(int id) {
-    	return getEntityById(DonationRecord.class, DonationRecord.ALL_RECORDS_QUERY_NAME, id);
-    }
-    
-    @Transactional
-    public DonationRecord updateDonationRecordById(int id, DonationRecord donationRecordWithUpdates) {
-    	return updateEntityById(DonationRecord.class, DonationRecord.ALL_RECORDS_QUERY_NAME, id, donationRecordWithUpdates);
+    	return getEntityById(DonationRecord.class, DonationRecord.GET_RECORD_BY_ID_QUERY_NAME, id);
     }
     
     @Transactional
     public DonationRecord deleteDonationRecordById(int id) {
-    	return deleteEntityById(DonationRecord.class, DonationRecord.ALL_RECORDS_QUERY_NAME, id);
+    	DonationRecord donationRecord = getEntityById(DonationRecord.class, DonationRecord.GET_RECORD_BY_ID_QUERY_NAME, id);
+    	Person person = getEntityById(Person.class, Person.GET_PERSION_BY_ID_QUERY_NAME, donationRecord.getOwner().getId());
+    	person.getDonations().remove(donationRecord);
+    	em.refresh(person);
+    	em.merge(person);
+    	em.flush();
+    	BloodDonation bloodDonation = donationRecord.getDonation();
+    	if(bloodDonation != null) {
+    		bloodDonation.setRecord(null);
+    		BloodDonation retrievedBloodDonation = getBloodDonationById(bloodDonation.getId());
+    		retrievedBloodDonation.setRecord(null);
+    		em.refresh(retrievedBloodDonation);
+    		em.merge(bloodDonation);
+    		em.flush();
+    	}
+    	em.refresh(donationRecord);
+		em.remove(donationRecord);
+		em.flush();
+    	return donationRecord;
     }
     
     @Transactional
-    public DonationRecord persistDonationRecord(DonationRecord newDonationRecord) {
-    	return persistEntity(newDonationRecord);
+    public DonationRecord persistDonationRecord(DonationRecord newDonationRecord, int bloodDonationId, int personId) {
+    	Person person = getEntityById(Person.class, Person.GET_PERSION_BY_ID_QUERY_NAME, personId);
+    	BloodDonation bloodDonation = null;
+    	if(bloodDonationId > 0) {
+    		bloodDonation = getEntityById(BloodDonation.class, BloodDonation.BLOOD_DONATION_BY_ID_QUERY_NAME, bloodDonationId);
+    	}
+    	newDonationRecord.setOwner(person);
+    	newDonationRecord.setDonation(bloodDonation);
+    	DonationRecord donationRecord = persistEntity(newDonationRecord);
+    	person.getDonations().add(donationRecord);
+    	if(bloodDonation != null) {
+    		bloodDonation.setRecord(donationRecord);
+    		em.merge(bloodDonation);
+    	}
+    	em.merge(person);
+    	return donationRecord;
     }
     
     public boolean isBloodBankDuplicated(BloodBank newBloodBank) {

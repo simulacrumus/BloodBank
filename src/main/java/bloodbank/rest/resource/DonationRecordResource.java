@@ -50,7 +50,7 @@ public class DonationRecordResource {
 	protected SecurityContext sc;
 
 	@GET
-    @RolesAllowed({ADMIN_ROLE, USER_ROLE})
+    @RolesAllowed({ADMIN_ROLE})
 	public Response getDonationRecords() {
 		LOG.debug( "retrieving all donation records ...");
 		List< DonationRecord> donationRecords = service.getAllDonationRecords();
@@ -67,34 +67,13 @@ public class DonationRecordResource {
 		Response response = Response.status( donationRecord == null ? Status.NOT_FOUND : Status.OK).entity( donationRecord).build();;
 		return response;
 	}
-
-	@POST
-	@RolesAllowed( { ADMIN_ROLE })
-	public Response addDonationRecord( DonationRecord newDonationRecord) {
-		Response response = null;
-		DonationRecord addedDonationRecord = service.persistDonationRecord( newDonationRecord);
-		response = Response.ok( addedDonationRecord).build();
-		return response;
-	}	
 	
 	@DELETE
 	@RolesAllowed( { ADMIN_ROLE })
 	@Path( RESOURCE_PATH_ID_PATH)
 	public Response deleteDonationRecordById( @PathParam( RESOURCE_PATH_ID_ELEMENT) int id) {
-		Response response = null;
 		DonationRecord deletedDonationRecord = service.deleteDonationRecordById(id);
-		response = Response.ok( deletedDonationRecord).build();
+		Response response = Response.ok( deletedDonationRecord).build();
 		return response;
 	}
-	
-	@PUT
-	@RolesAllowed( { ADMIN_ROLE })
-	@Path( RESOURCE_PATH_ID_PATH)
-	public Response updateDonationRecordById( @PathParam( RESOURCE_PATH_ID_ELEMENT) int id,  DonationRecord newDonationRecord) {
-		Response response = null;
-		DonationRecord deletedDonationRecord = service.updateDonationRecordById(id,newDonationRecord);
-		response = Response.ok( deletedDonationRecord).build();
-		return response;
-	}
-	
 }

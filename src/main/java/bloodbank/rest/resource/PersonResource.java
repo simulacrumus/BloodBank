@@ -21,6 +21,7 @@ import javax.ejb.EJB;
 import javax.inject.Inject;
 import javax.security.enterprise.SecurityContext;
 import javax.ws.rs.Consumes;
+import javax.ws.rs.DELETE;
 import javax.ws.rs.ForbiddenException;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
@@ -28,6 +29,7 @@ import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
@@ -37,6 +39,8 @@ import org.glassfish.soteria.WrappingCallerPrincipal;
 
 import bloodbank.ejb.BloodBankService;
 import bloodbank.entity.Address;
+import bloodbank.entity.BloodDonation;
+import bloodbank.entity.DonationRecord;
 import bloodbank.entity.Person;
 import bloodbank.entity.SecurityUser;
 
@@ -91,21 +95,29 @@ public class PersonResource {
 	@POST
 	@RolesAllowed( { ADMIN_ROLE })
 	public Response addPerson( Person newPerson) {
-		Response response = null;
-		Person newPersonWithIdTimestamps = service.persistPerson( newPerson);
-		// build a SecurityUser linked to the new person
-		service.buildUserForNewPerson( newPersonWithIdTimestamps);
-		response = Response.ok( newPersonWithIdTimestamps).build();
+		service.buildUserForNewPerson( newPerson);
+//		Person newPersonWithIdTimestamps = service.persistPerson( newPerson);
+		Response response = Response.ok( newPerson).build();
 		return response;
 	}
-
-	@PUT
+	
+	@DELETE
+	@RolesAllowed( { ADMIN_ROLE, USER_ROLE })
+	@Path( RESOURCE_PATH_ID_PATH)
+	public Response deletePersonById( @PathParam( RESOURCE_PATH_ID_ELEMENT) int id) {
+		LOG.debug( "deleting specific person " + id);
+		Person deletedPerson = service.deletePersonById(id);
+		Response response = Response.ok( deletedPerson).build();
+		return response;
+	}
+	
+	
+	@POST
 	@RolesAllowed( { ADMIN_ROLE })
-	@Path( CUSTOMER_ADDRESS_RESOURCE_PATH)
-	public Response addAddressForPerson( @PathParam( RESOURCE_PATH_ID_ELEMENT) int id, Address newAddress) {
-		Response response = null;
-		Person updatedPerson = service.setAddressFor( id, newAddress);
-		response = Response.ok( updatedPerson).build();
+	@Path( RESOURCE_PATH_ID_PATH + "/donationrecord")
+	public Response addDonationRecord(@PathParam( RESOURCE_PATH_ID_ELEMENT) int personId, @QueryParam("bloodDonationId") int bloodDonationId, DonationRecord newDonationRecord) { 
+		DonationRecord addedDonationRecord = service.persistDonationRecord( newDonationRecord, bloodDonationId, personId);
+		Response response = Response.ok( addedDonationRecord).build();
 		return response;
-	}
+	}	
 }

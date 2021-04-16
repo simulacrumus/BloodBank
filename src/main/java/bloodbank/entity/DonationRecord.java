@@ -16,15 +16,17 @@ import javax.persistence.Table;
 
 import org.hibernate.Hibernate;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 /**
  * The persistent class for the donation_record database table.
  * 
  */
 @Entity
 @Table( name = "donation_record")
-@NamedQuery( name = DonationRecord.ALL_RECORDS_QUERY_NAME, query = "SELECT d FROM DonationRecord d left JOIN FETCH d.owner left JOIN FETCH d.donation")
-@NamedQuery( name = DonationRecord.GET_RECORD_BY_ID_QUERY_NAME, query = "SELECT d FROM DonationRecord d left JOIN FETCH d.owner left JOIN FETCH d.donation where d.id=:param1")
 @AttributeOverride( name = "id", column = @Column( name = "record_id"))
+@NamedQuery( name = DonationRecord.ALL_RECORDS_QUERY_NAME, query = "SELECT distinct r FROM DonationRecord r left JOIN FETCH r.owner")
+@NamedQuery( name = DonationRecord.GET_RECORD_BY_ID_QUERY_NAME, query = "SELECT distinct r FROM DonationRecord r left JOIN FETCH r.owner where r.id=:param1")
 public class DonationRecord extends PojoBase implements Serializable {
 	private static final long serialVersionUID = 1L;
 	
@@ -33,10 +35,12 @@ public class DonationRecord extends PojoBase implements Serializable {
 
 	@OneToOne( fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REFRESH})
 	@JoinColumn( name = "donation_id", referencedColumnName = "donation_id")
+	@JsonIgnore
 	private BloodDonation donation;
 
 	@ManyToOne( fetch = FetchType.LAZY, cascade = {CascadeType.MERGE, CascadeType.REFRESH}, optional = false)
 	@JoinColumn( name = "person_id", referencedColumnName = "id", nullable = false)
+	@JsonIgnore
 	private Person owner;
 
 	private byte tested;
