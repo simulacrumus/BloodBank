@@ -11,6 +11,7 @@ import static bloodbank.utility.MyConstants.BLOOD_DONATION_RESOURCE_NAME;
 import static bloodbank.utility.MyConstants.RESOURCE_PATH_ID_ELEMENT;
 import static bloodbank.utility.MyConstants.RESOURCE_PATH_ID_PATH;
 import static bloodbank.utility.MyConstants.ADMIN_ROLE;
+import static bloodbank.utility.MyConstants.USER_ROLE;
 import static bloodbank.utility.MyConstants.BLOODBANK_BLOODDONATION_RESOURCE_PATH;
 
 import java.util.List;
@@ -53,7 +54,7 @@ public class BloodBankResource {
 	protected SecurityContext sc;
 
 	@GET
-    @RolesAllowed({ADMIN_ROLE})
+    @RolesAllowed({ADMIN_ROLE, USER_ROLE})
 	public Response getBloodBanks() {
 		LOG.debug( "retrieving all blood banks ...");
 		List< BloodBank> bloodBanks = service.getAllBloodBanks();
@@ -62,11 +63,15 @@ public class BloodBankResource {
 	}
 
 	@GET
-	@RolesAllowed( { ADMIN_ROLE })
+	@RolesAllowed( { ADMIN_ROLE, USER_ROLE})
 	@Path( RESOURCE_PATH_ID_PATH)
 	public Response getBloodBankById( @PathParam( RESOURCE_PATH_ID_ELEMENT) int id) {
 		LOG.debug( "try to retrieve specific blood bank " + id);	
 		BloodBank bloodBank = service.getBloodBankById(id);
+		if(bloodBank == null) {
+			HttpErrorResponse error = new HttpErrorResponse(Status.NOT_FOUND.getStatusCode(), "No Blood Bank found with id " + id);
+			return Response.status(Status.NOT_FOUND).entity(error).build();
+		}
 		Response response = Response.status( bloodBank == null ? Status.NOT_FOUND : Status.OK).entity( bloodBank).build();
 		return response;
 	}
@@ -75,6 +80,10 @@ public class BloodBankResource {
 	@RolesAllowed( { ADMIN_ROLE })
 	public Response addBloodBank( BloodBank newBloodBank) {
 		LOG.debug( "add a new bloodbank");
+		if(newBloodBank.getName() == null || newBloodBank.getName().equals("")) {
+			HttpErrorResponse error = new HttpErrorResponse(Status.BAD_REQUEST.getStatusCode(), "Blood Bank name is missing");
+			return Response.status(Status.BAD_REQUEST).entity(error).build();
+		}
 		if(service.isBloodBankDuplicated(newBloodBank)) {
 			HttpErrorResponse error = new HttpErrorResponse(Status.CONFLICT.getStatusCode(), "entity already exists");
 			return Response.status(Status.CONFLICT).entity(error).build();
@@ -92,6 +101,10 @@ public class BloodBankResource {
 	public Response deleteBloodBankById( @PathParam( RESOURCE_PATH_ID_ELEMENT) int id) {
 		LOG.debug( "deleteing bloodbank " + id);
 		BloodBank deletedBloodBank = service.deleteBloodBankById(id);
+		if(deletedBloodBank == null) {
+			HttpErrorResponse error = new HttpErrorResponse(Status.NOT_FOUND.getStatusCode(), "No Blood Bank found with id " + id);
+			return Response.status(Status.NOT_FOUND).entity(error).build();
+		}
 		Response response = Response.ok( deletedBloodBank).build();
 		return response;
 	}	
@@ -101,6 +114,14 @@ public class BloodBankResource {
 	@Path( BLOODBANK_BLOODDONATION_RESOURCE_PATH)
 	public Response addBloodDonationByBankId( @PathParam( RESOURCE_PATH_ID_ELEMENT) int bankId, BloodDonation newBloodDonation) {
 		LOG.debug( "add a new blood donation");
+		if(newBloodDonation.getBloodType() == null) {
+			HttpErrorResponse error = new HttpErrorResponse(Status.BAD_REQUEST.getStatusCode(), "Blood Type is required");
+			return Response.status(Status.BAD_REQUEST).entity(error).build();
+		}
+		if(newBloodDonation.getBloodType().getBloodGroup() == null || newBloodDonation.getBloodType().getBloodGroup().equals("")) {
+			HttpErrorResponse error = new HttpErrorResponse(Status.BAD_REQUEST.getStatusCode(), "Blood Group is required");
+			return Response.status(Status.BAD_REQUEST).entity(error).build();
+		}
 		BloodBank bloodBank = service.getBloodBankById(bankId);
 		if(bloodBank == null) {
 			HttpErrorResponse error = new HttpErrorResponse(Status.NOT_FOUND.getStatusCode(), "blood bank with id " + bankId + " does not exist");
@@ -113,7 +134,7 @@ public class BloodBankResource {
 	}
 	
 	@GET
-	@RolesAllowed( { ADMIN_ROLE })
+	@RolesAllowed( { ADMIN_ROLE, USER_ROLE})
 	@Path( "/"+BLOOD_DONATION_RESOURCE_NAME)
 	public Response getAllBloodDonations() {
 		LOG.debug( "retrieving all blood donations ...");
@@ -128,6 +149,10 @@ public class BloodBankResource {
 	public Response getBloodDonationById(@PathParam( RESOURCE_PATH_ID_ELEMENT) int id) {
 		LOG.debug( "try to retrieve specific blood donation " + id);
 		BloodDonation bloodDonation =service.getBloodDonationById(id);
+		if(bloodDonation == null) {
+			HttpErrorResponse error = new HttpErrorResponse(Status.NOT_FOUND.getStatusCode(), "No Blood Donation found with id " + id);
+			return Response.status(Status.NOT_FOUND).entity(error).build();
+		}
 		Response response = Response.status( bloodDonation == null ? Status.NOT_FOUND : Status.OK).entity( bloodDonation).build();
 		return response;
 	}
@@ -136,6 +161,11 @@ public class BloodBankResource {
 	@RolesAllowed( { ADMIN_ROLE })
 	@Path( "/"+BLOOD_DONATION_RESOURCE_NAME+RESOURCE_PATH_ID_PATH)
 	public Response deleteBloodDonationById( @PathParam( RESOURCE_PATH_ID_ELEMENT) int id) {
+		BloodDonation bloodDonation = service.getBloodDonationById(id);
+		if(bloodDonation == null) {
+			HttpErrorResponse error = new HttpErrorResponse(Status.NOT_FOUND.getStatusCode(), "No Blood Donation found with id " + id);
+			return Response.status(Status.NOT_FOUND).entity(error).build();
+		}
 		BloodDonation deletedBloodDonation = service.deleteBloodDonationById(id);
 		Response response = Response.ok( deletedBloodDonation).build();
 		return response;

@@ -1,6 +1,7 @@
 package bloodbank.entity;
 
 import java.io.Serializable;
+import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
@@ -55,7 +56,8 @@ public abstract class BloodBank extends PojoBase implements Serializable {
 
 	@OneToMany( cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REFRESH, CascadeType.REMOVE}, orphanRemoval = true, mappedBy = "bank")
 //	@JoinColumn( name = "bank_id", referencedColumnName = "bank_id")
-	private Set< BloodDonation> donations;
+	@JsonIgnore
+	private Set< BloodDonation> donations = new HashSet<BloodDonation>();
 
 	@Transient
 	private boolean isPublic;
@@ -72,7 +74,6 @@ public abstract class BloodBank extends PojoBase implements Serializable {
 		return isPublic;
 	}
 
-	@JsonIgnore
 	public Set< BloodDonation> getDonations() {
 		return donations;
 	}

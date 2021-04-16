@@ -64,7 +64,11 @@ public class DonationRecordResource {
 	public Response getDonationRecordById( @PathParam( RESOURCE_PATH_ID_ELEMENT) int id) {
 		LOG.debug( "try to retrieve specific donation record " + id);
 		DonationRecord donationRecord = service.getDonationRecordById(id);
-		Response response = Response.status( donationRecord == null ? Status.NOT_FOUND : Status.OK).entity( donationRecord).build();;
+		if(donationRecord == null) {
+			HttpErrorResponse error = new HttpErrorResponse(Status.NOT_FOUND.getStatusCode(), "No Donation Record found with id " + id);
+			return Response.status(Status.NOT_FOUND).entity(error).build();
+		}
+		Response response = Response.status(Status.OK).entity( donationRecord).build();;
 		return response;
 	}
 	
@@ -72,6 +76,11 @@ public class DonationRecordResource {
 	@RolesAllowed( { ADMIN_ROLE })
 	@Path( RESOURCE_PATH_ID_PATH)
 	public Response deleteDonationRecordById( @PathParam( RESOURCE_PATH_ID_ELEMENT) int id) {
+		DonationRecord donationRecord = service.getDonationRecordById(id);
+		if(donationRecord == null) {
+			HttpErrorResponse error = new HttpErrorResponse(Status.NOT_FOUND.getStatusCode(), "No Donation Record found with id " + id);
+			return Response.status(Status.NOT_FOUND).entity(error).build();
+		}
 		DonationRecord deletedDonationRecord = service.deleteDonationRecordById(id);
 		Response response = Response.ok( deletedDonationRecord).build();
 		return response;

@@ -36,6 +36,7 @@ import org.apache.logging.log4j.Logger;
 import bloodbank.ejb.BloodBankService;
 import bloodbank.entity.BloodDonation;
 import bloodbank.entity.DonationRecord;
+import bloodbank.entity.Person;
 
 @Path(BLOOD_DONATION_RESOURCE_NAME)
 @Consumes( MediaType.APPLICATION_JSON)
@@ -51,7 +52,7 @@ public class BloodDonationResource {
 	protected SecurityContext sc;
 
 	@GET
-    @RolesAllowed({ADMIN_ROLE})
+    @RolesAllowed({ADMIN_ROLE, USER_ROLE})
 	public Response getBloodDonations() {
 		LOG.debug( "retrieving all blood donations ...");
 		List< BloodDonation> bloodDonations = service.getAllBloodDonations();
@@ -65,6 +66,10 @@ public class BloodDonationResource {
 	public Response getBloodDonationById( @PathParam( RESOURCE_PATH_ID_ELEMENT) int id) {
 		LOG.debug( "try to retrieve specific blood donation " + id);
 		BloodDonation bloodDonation =service.getBloodDonationById(id);
+		if(bloodDonation == null) {
+			HttpErrorResponse error = new HttpErrorResponse(Status.NOT_FOUND.getStatusCode(), "No Blood Donation found with id " + id);
+			return Response.status(Status.NOT_FOUND).entity(error).build();
+		}
 		Response response = Response.status( bloodDonation == null ? Status.NOT_FOUND : Status.OK).entity( bloodDonation).build();
 		return response;
 	}
@@ -73,6 +78,11 @@ public class BloodDonationResource {
 	@RolesAllowed( { ADMIN_ROLE })
 	@Path( RESOURCE_PATH_ID_PATH)
 	public Response deleteBloodDonationById( @PathParam( RESOURCE_PATH_ID_ELEMENT) int id) {
+		BloodDonation bloodDonation = service.getBloodDonationById(id);
+		if(bloodDonation == null) {
+			HttpErrorResponse error = new HttpErrorResponse(Status.NOT_FOUND.getStatusCode(), "No Blood Donation found with id " + id);
+			return Response.status(Status.NOT_FOUND).entity(error).build();
+		}
 		BloodDonation deletedBloodDonation = service.deleteBloodDonationById(id);
 		Response response = Response.ok( deletedBloodDonation).build();
 		return response;
@@ -82,6 +92,16 @@ public class BloodDonationResource {
 	@RolesAllowed( { ADMIN_ROLE })
 	@Path( RESOURCE_PATH_ID_PATH + "/{personId}" )
 	public Response addDonationRecord(@PathParam( RESOURCE_PATH_ID_ELEMENT) int bloodDonationId, @PathParam( "personId") int personId, DonationRecord newDonationRecord) { 
+		Person person = service.getPersonById(personId);
+		if(person == null) {
+			HttpErrorResponse error = new HttpErrorResponse(Status.NOT_FOUND.getStatusCode(), "No Person found with id " + personId);
+			return Response.status(Status.NOT_FOUND).entity(error).build();
+		}
+		BloodDonation bloodDonation = service.getBloodDonationById(bloodDonationId);
+		if(bloodDonation == null) {
+			HttpErrorResponse error = new HttpErrorResponse(Status.NOT_FOUND.getStatusCode(), "No Blood Donation found with id " + bloodDonationId);
+			return Response.status(Status.NOT_FOUND).entity(error).build();
+		}
 		DonationRecord addedDonationRecord = service.persistDonationRecord( newDonationRecord, bloodDonationId, personId);
 		Response response = Response.ok( addedDonationRecord).build();
 		return response;

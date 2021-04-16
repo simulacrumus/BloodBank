@@ -73,10 +73,13 @@ public class PersonResource {
 		LOG.debug( "try to retrieve specific person " + id);
 		Response response = null;
 		Person person = null;
-
 		if ( sc.isCallerInRole( ADMIN_ROLE)) {
 			person = service.getPersonById( id);
-			response = Response.status( person == null ? Status.NOT_FOUND : Status.OK).entity( person).build();
+			if(person!=null) {
+				HttpErrorResponse error = new HttpErrorResponse(Status.NOT_FOUND.getStatusCode(), "No Person found with id " + id);
+				return Response.status(Status.NOT_FOUND).entity(error).build();
+			}
+			response = Response.status(Status.OK).entity( person).build();
 		} else if ( sc.isCallerInRole( USER_ROLE)) {
 			WrappingCallerPrincipal wCallerPrincipal = (WrappingCallerPrincipal) sc.getCallerPrincipal();
 			SecurityUser sUser = (SecurityUser) wCallerPrincipal.getWrapped();
@@ -84,7 +87,8 @@ public class PersonResource {
 			if ( person != null && person.getId() == id) {
 				response = Response.status( Status.OK).entity( person).build();
 			} else {
-				throw new ForbiddenException( "User trying to access resource it does not own (wrong userid)");
+				HttpErrorResponse error = new HttpErrorResponse(Status.NOT_FOUND.getStatusCode(), "No Person found with id " + id);
+				return Response.status(Status.NOT_FOUND).entity(error).build();
 			}
 		} else {
 			response = Response.status( Status.BAD_REQUEST).build();
@@ -95,6 +99,14 @@ public class PersonResource {
 	@POST
 	@RolesAllowed( { ADMIN_ROLE })
 	public Response addPerson( Person newPerson) {
+		if(newPerson.getFirstName() == null || newPerson.getFirstName().equals("")) {
+			HttpErrorResponse error = new HttpErrorResponse(Status.BAD_REQUEST.getStatusCode(), "First name is required");
+			return Response.status(Status.BAD_REQUEST).entity(error).build();
+		}
+		if(newPerson.getLastName() == null || newPerson.getLastName().equals("")) {
+			HttpErrorResponse error = new HttpErrorResponse(Status.BAD_REQUEST.getStatusCode(), "Last name is required");
+			return Response.status(Status.BAD_REQUEST).entity(error).build();
+		}
 		service.buildUserForNewPerson( newPerson);
 //		Person newPersonWithIdTimestamps = service.persistPerson( newPerson);
 		Response response = Response.ok( newPerson).build();
@@ -102,10 +114,15 @@ public class PersonResource {
 	}
 	
 	@DELETE
-	@RolesAllowed( { ADMIN_ROLE, USER_ROLE })
+	@RolesAllowed( { ADMIN_ROLE })
 	@Path( RESOURCE_PATH_ID_PATH)
 	public Response deletePersonById( @PathParam( RESOURCE_PATH_ID_ELEMENT) int id) {
 		LOG.debug( "deleting specific person " + id);
+		Person person = service.getPersonById(id);
+		if(person == null) {
+			HttpErrorResponse error = new HttpErrorResponse(Status.NOT_FOUND.getStatusCode(), "No Person found with id " + id);
+			return Response.status(Status.NOT_FOUND).entity(error).build();
+		}
 		Person deletedPerson = service.deletePersonById(id);
 		Response response = Response.ok( deletedPerson).build();
 		return response;
@@ -116,7 +133,19 @@ public class PersonResource {
 	@RolesAllowed( { ADMIN_ROLE })
 	@Path( RESOURCE_PATH_ID_PATH + "/donationrecord")
 	public Response addDonationRecord(@PathParam( RESOURCE_PATH_ID_ELEMENT) int personId, @QueryParam("bloodDonationId") int bloodDonationId, DonationRecord newDonationRecord) { 
-		DonationRecord addedDonationRecord = service.persistDonationRecord( newDonationRecord, bloodDonationId, personId);
+		Person person = service.getPersonById( personId);
+		if(person == null) {
+			HttpErrorResponse error = new HttpErrorResponse(Status.NOT_FOUND.getStatusCode(), "No Person found with id " + personId);
+			return Response.status(Status.NOT_FOUND).entity(error).build();
+		}
+		if(bloodDonationId > 0) {
+			BloodDonation bloodDonation = service.getBloodDonationById( bloodDonationId);
+			if(bloodDonation == null) {
+				HttpErrorResponse error = new HttpErrorResponse(Status.NOT_FOUND.getStatusCode(), "No Blood Donation found with id " + personId);
+				return Response.status(Status.NOT_FOUND).entity(error).build();
+			}
+		}
+		DonationRecord addedDonationRecord = service.persistDonationRecord( newDonationRecord, bloodDonationId > 0 ? bloodDonationId : 0, personId);
 		Response response = Response.ok( addedDonationRecord).build();
 		return response;
 	}	

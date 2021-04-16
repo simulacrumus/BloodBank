@@ -82,7 +82,7 @@ public class Contact extends PojoBaseCompositeKey< ContactPK> implements Seriali
 			id.setPersonId( owner.id);
 		this.owner = owner;
 	}
-
+	
 	public Phone getPhone() {
 		return phone;
 	}
