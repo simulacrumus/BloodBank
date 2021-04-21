@@ -117,6 +117,18 @@ public class PhoneResource {
 			HttpErrorResponse error = new HttpErrorResponse(Status.NOT_FOUND.getStatusCode(), "No Phone found with id " + id);
 			return Response.status(Status.NOT_FOUND).entity(error).build();
 		}
+		if(newPhone.getAreaCode() == null || newPhone.getAreaCode().equals("")) {
+			HttpErrorResponse error = new HttpErrorResponse(Status.BAD_REQUEST.getStatusCode(), "Area code is required");
+			return Response.status(Status.BAD_REQUEST).entity(error).build();
+		}
+		if(newPhone.getCountryCode() == null || newPhone.getCountryCode().equals("")) {
+			HttpErrorResponse error = new HttpErrorResponse(Status.BAD_REQUEST.getStatusCode(), "Country code is required");
+			return Response.status(Status.BAD_REQUEST).entity(error).build();
+		}
+		if(newPhone.getNumber() == null || newPhone.getNumber().trim().equals("")) {
+			HttpErrorResponse error = new HttpErrorResponse(Status.BAD_REQUEST.getStatusCode(), "Number is required");
+			return Response.status(Status.BAD_REQUEST).entity(error).build();
+		}
 		Phone deletedPhone = service.updatePhoneById(id, newPhone);
 		response = Response.ok( deletedPhone).build();
 		return response;

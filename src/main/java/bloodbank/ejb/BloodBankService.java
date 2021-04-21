@@ -229,12 +229,9 @@ public class BloodBankService implements Serializable {
     	Phone phoneToBeUpdated = getPhoneById(id);
     	if(phoneToBeUpdated != null) {
     		em.refresh(phoneToBeUpdated);
-    		if(updatingPhone.getAreaCode() != null && updatingPhone.getAreaCode().trim().equals(""))
-    			phoneToBeUpdated.setAreaCode(updatingPhone.getAreaCode());
-    		if(updatingPhone.getCountryCode() != null && updatingPhone.getCountryCode().trim().equals(""))
-    			phoneToBeUpdated.setCountryCode(updatingPhone.getCountryCode());
-    		if(updatingPhone.getNumber() != null && updatingPhone.getNumber().trim().equals(""))
-    			phoneToBeUpdated.setNumber(updatingPhone.getNumber());
+			phoneToBeUpdated.setAreaCode(updatingPhone.getAreaCode());
+			phoneToBeUpdated.setCountryCode(updatingPhone.getCountryCode());
+			phoneToBeUpdated.setNumber(updatingPhone.getNumber());
     		em.merge(phoneToBeUpdated);
     		em.flush();
     	}
