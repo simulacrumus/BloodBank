@@ -16,6 +16,8 @@ import static bloodbank.utility.MyConstants.DEFAULT_USER_PASSWORD;
 import static bloodbank.utility.MyConstants.DEFAULT_USER_PREFIX;
 import static bloodbank.utility.MyConstants.PERSON_RESOURCE_NAME;
 import static bloodbank.utility.MyConstants.DONATION_RECORD_RESOURCE_NAME;
+import static bloodbank.utility.MyConstants.PHONE_RESOURCE_NAME;
+import static bloodbank.utility.MyConstants.BLOOD_DONATION_RESOURCE_NAME;
 import static bloodbank.utility.MyConstants.ACCESS_UNAUTHORIZED;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
@@ -57,6 +59,7 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 
 import bloodbank.entity.DonationRecord;
 import bloodbank.entity.Person;
+import bloodbank.entity.Phone;
 
 @TestMethodOrder(MethodOrderer.MethodName.class)
 public class TestBloodBankSystem {
@@ -72,6 +75,7 @@ public class TestBloodBankSystem {
     static final String DEFAULT_LAST_NAME = "Emami";
     private static Person newPerson;
     private static DonationRecord record;
+    private static Phone phone;
     private static Map<String, Object> sendPerson;
 
     // test fixture(s)
@@ -85,6 +89,10 @@ public class TestBloodBankSystem {
     
     public Response createResource(HttpAuthenticationFeature authType, String resourceName, Entity<?> newResource) {
     	return webTarget.register(authType).path(resourceName).request().post(newResource);
+    }
+    
+    public Response updateResource(HttpAuthenticationFeature authType, String resourceName, Entity<?> newResource) {
+    	return webTarget.register(authType).path(resourceName).request().put(newResource);
     }
     
     public Response deleteResource(HttpAuthenticationFeature authType, String resourceName) {
@@ -112,8 +120,12 @@ public class TestBloodBankSystem {
 		sendPerson.put("firstName", newPerson.getFirstName());
 		sendPerson.put("lastName", newPerson.getLastName());
 		
-		//Donation setup
+		//DonationRecord setup
 		record = new DonationRecord();
+		
+		//Phone setup
+		phone = new Phone();
+		phone.setNumber("1", "613", "1112222");
     }
 
     protected WebTarget webTarget;
@@ -180,7 +192,7 @@ public class TestBloodBankSystem {
 		assertThat(newPerson.getFirstName(), is(equalTo(returnedPerson.getFirstName())));
 		assertThat(newPerson.getLastName(), is(equalTo(returnedPerson.getLastName())));
 		
-		response = webTarget.path(PERSON_RESOURCE_NAME).request().get(); //GET ALL Person/customers again
+		response = getResource(adminAuth, PERSON_RESOURCE_NAME); //GET ALL Person/customers again
 		assertThat(response.getStatus(), is(200)); //check success code from response
 		
 		List<Person> emps = response.readEntity(new GenericType<List<Person>>() {
@@ -193,7 +205,7 @@ public class TestBloodBankSystem {
 	@Order(4)
 	@Test
 	public void test04_add_donation_record_to_customer() throws JsonMappingException, JsonProcessingException {
-		// create a structured DonationRecord object jor json
+		// create a structured DonationRecord object for json
 		Map<String, Object> sendDonationRecord = new HashMap<>();
 		sendDonationRecord.put("tested", false);
 
@@ -214,7 +226,7 @@ public class TestBloodBankSystem {
 	
     @Order(5)
 	@Test
-	public void test05_getAll_donation_records() throws JsonMappingException, JsonProcessingException {
+	public void test05_get_all_donation_records() throws JsonMappingException, JsonProcessingException {
 		Response response = getResource(adminAuth, DONATION_RECORD_RESOURCE_NAME);
 		assertThat(response.getStatus(), is(200)); // check success code from response
 		List<DonationRecord> records = response.readEntity(new GenericType<List<DonationRecord>>() {
@@ -225,7 +237,7 @@ public class TestBloodBankSystem {
     
 	@Order(6)
 	@Test
-	public void test06_get_donation_record_by_id() throws JsonMappingException, JsonProcessingException {
+	public void test06_get_donation_record_by_id_arminrole() throws JsonMappingException, JsonProcessingException {
 		Response response = getResource(adminAuth, DONATION_RECORD_RESOURCE_NAME + "/" + record.getId());
 		assertThat(response.getStatus(), is(200)); // check success code from response
 
@@ -238,15 +250,11 @@ public class TestBloodBankSystem {
 	
 	@Order(7)
 	@Test
-	public void test07_get_donation_record_by_id() throws JsonMappingException, JsonProcessingException {
-		Response response = getResource(adminAuth, DONATION_RECORD_RESOURCE_NAME + "/" + record.getId());
-		assertThat(response.getStatus(), is(200)); // check success code from response
-
-		DonationRecord returnedRecord = response.readEntity(DonationRecord.class);
-
-		// validate fields
-		assertThat(record.getId(), is(equalTo(returnedRecord.getId())));
-		assertThat(record.getTested(), is(returnedRecord.getTested()));
+	public void test07_get_donation_record_by_id_user_role() throws JsonMappingException, JsonProcessingException {
+		Response response = getResource(userAuth, DONATION_RECORD_RESOURCE_NAME + "/" + record.getId());
+		
+		assertThat(response.getStatus(), is((401)));
+		assertThat(response.getStatusInfo().getReasonPhrase(), is(equalTo(ACCESS_UNAUTHORIZED)));
 	}
 	
     @Order(8)
@@ -286,28 +294,146 @@ public class TestBloodBankSystem {
     @Order(11)
 	@Test
 	public void test11_delete_customer_adminrole() throws JsonMappingException, JsonProcessingException {
-		// GET all customers/persons (to check the original count)
-		Response response = getResource(adminAuth, PERSON_RESOURCE_NAME); //pass in adminAuth this time
-		assertThat(response.getStatus(), is(200)); // check success code from response
 
-		// use newCount to keep track of the original number of records + the newly
-		// added record (sendPerson) in the db (so existing size plus one)
-		int count = response.readEntity(new GenericType<List<Person>>() {
-		}).size();
-
-		response = webTarget.path(PERSON_RESOURCE_NAME + "/" + newPerson.getId()).request()
-				.delete(); // execute request to delete a single person (should be the new person we just
+		Response response = deleteResource(adminAuth, PERSON_RESOURCE_NAME + "/" + newPerson.getId()); // execute request to delete a single person (should be the new person we just
 							// created)
 		assertThat(response.getStatus(), is(200)); // check success code from response
 		assertThat(newPerson.getId(), is(response.readEntity(Person.class).getId()));
 
-		response = webTarget.path(PERSON_RESOURCE_NAME).request().get();
+		response = getResource(adminAuth, PERSON_RESOURCE_NAME);
 		assertThat(response.getStatus(), is(200)); // check success code from response
 
 		List<Person> emps = response.readEntity(new GenericType<List<Person>>() {
 		});
 
-		assertThat(count - 1, is(equalTo(emps.size())));
+		assertThat(emps, hasSize(1));
+	}
+    
+    @Order(12)
+	@Test
+	public void test12_getall_phones_adminrole() throws JsonMappingException, JsonProcessingException {
+		Response response = getResource(adminAuth, PHONE_RESOURCE_NAME);
+		assertThat(response.getStatus(), is(200));
+		List<Phone> phones = response.readEntity(new GenericType<List<Phone>>() {
+		});
+		assertThat(phones, is(not(empty())));
+		assertThat(phones, hasSize(2));
+	}
+    
+    @Order(13)
+	@Test
+	public void test13_getall_phones_noauth() throws JsonMappingException, JsonProcessingException {
+		Response response = webTarget.path(PERSON_RESOURCE_NAME).request().get();
+		assertThat(response.getStatus(), is((401)));
+		assertThat(response.getStatusInfo().getReasonPhrase(), is(equalTo(ACCESS_UNAUTHORIZED)));
+	}
+    
+    @Order(14)
+	@Test
+	public void test14_add_phone() throws JsonMappingException, JsonProcessingException {
+		// create a structured Phone object for json
+		Map<String, Object> sendPhone = new HashMap<>();
+		sendPhone.put("areaCode", phone.getAreaCode());
+		sendPhone.put("countryCode", phone.getCountryCode());
+		sendPhone.put("number", phone.getNumber());
+		
+		//GET all phones (to check the original count)
+		Response response = getResource(adminAuth, PHONE_RESOURCE_NAME);
+		assertThat(response.getStatus(), is(200)); //check success code from response
+		
+		//use originalCount to keep track of the original number of records in the db
+		int originalCount = response.readEntity(new GenericType<List<Phone>>() {
+		}).size();
+		
+		response = createResource(adminAuth, PHONE_RESOURCE_NAME, Entity.json(sendPhone)); //execute request to add new Phone(sendPhone)
+
+		assertThat(response.getStatus(), is((200))); //check success code from response
+		Phone returnedPhone = response.readEntity(Phone.class);
+		phone.setId(returnedPhone.getId());
+		
+		response = getResource(adminAuth, PHONE_RESOURCE_NAME); //GET ALL phones again
+		assertThat(response.getStatus(), is(200)); //check success code from response
+		
+		List<Phone> phones = response.readEntity(new GenericType<List<Phone>>() {
+		});
+		assertThat(originalCount+1, is(equalTo(phones.size()))); //check that the size has increased
+		
+	}
+    
+	@Order(15)
+	@Test
+	public void test15_get_phone_by_id() throws JsonMappingException, JsonProcessingException {
+		Response response = getResource(adminAuth, PHONE_RESOURCE_NAME + "/" + phone.getId());
+		assertThat(response.getStatus(), is(200)); // check success code from response
+
+		Phone returnedPhone = response.readEntity(Phone.class);
+
+		// validate fields
+		assertThat(phone.getId(), is(equalTo(returnedPhone.getId())));
+		assertThat(phone.getAreaCode(), is(equalTo(returnedPhone.getAreaCode())));
+		assertThat(phone.getCountryCode(), is(equalTo(returnedPhone.getCountryCode())));
+		assertThat(phone.getNumber(), is(equalTo(returnedPhone.getNumber())));
+	}
+	
+	@Order(16)
+	@Test
+	public void test16_update_phone_by_id() throws JsonMappingException, JsonProcessingException {
+		// update phone details
+		phone.setNumber("1", "613", "5555552");
+		// create a structured Phone object for json
+		Map<String, Object> updatePhone = new HashMap<>();
+		updatePhone.put("areaCode", phone.getAreaCode());
+		updatePhone.put("countryCode", phone.getCountryCode());
+		updatePhone.put("number", phone.getNumber());
+
+		Response response = updateResource(adminAuth, PHONE_RESOURCE_NAME + "/" + phone.getId(),
+				Entity.json(updatePhone)); // execute request to update existing Phone(updatePhone)
+		assertThat(response.getStatus(), is(200)); // check success code from response
+
+		Phone returnedPhone = response.readEntity(Phone.class);
+
+		// validate fields
+		assertThat(phone.getId(), is(equalTo(returnedPhone.getId())));
+		assertThat(phone.getAreaCode(), is(equalTo(returnedPhone.getAreaCode())));
+		assertThat(phone.getCountryCode(), is(equalTo(returnedPhone.getCountryCode())));
+//		assertThat(phone.getNumber(), is(equalTo(returnedPhone.getNumber())));
+	}
+
+	@Order(17)
+	@Test
+	public void test17_delete_phone_user_role() throws JsonMappingException, JsonProcessingException {
+		Response response = deleteResource(userAuth, PHONE_RESOURCE_NAME + "/" + phone.getId()); // execute request to
+																									// attempt delete w/ userAuth role
+		assertThat(response.getStatus(), is((401))); // check success code from response
+		assertThat(response.getStatusInfo().getReasonPhrase(), is(equalTo(ACCESS_UNAUTHORIZED)));
+	}
+	
+	@Order(18)
+	@Test
+	public void test18_delete_phone_adminrole() throws JsonMappingException, JsonProcessingException {
+
+		Response response = deleteResource(adminAuth, PHONE_RESOURCE_NAME + "/" + phone.getId());
+		assertThat(response.getStatus(), is(200)); // check success code from response
+		assertThat(phone.getId(), is(response.readEntity(Phone.class).getId()));
+
+		response = getResource(adminAuth, PHONE_RESOURCE_NAME);
+		assertThat(response.getStatus(), is(200)); // check success code from response
+
+		List<Phone> phones = response.readEntity(new GenericType<List<Phone>>() {
+		});
+
+		assertThat(phones, hasSize(2));
+	}
+	
+	@Order(19)
+	@Test
+	public void test19_get_all_blood_donation_adminrole() throws JsonMappingException, JsonProcessingException {
+		Response response = getResource(adminAuth, BLOOD_DONATION_RESOURCE_NAME);
+		assertThat(response.getStatus(), is(200));
+		List<Phone> bloodDonations = response.readEntity(new GenericType<List<Phone>>() {
+		});
+		assertThat(bloodDonations, is(not(empty())));
+		assertThat(bloodDonations, hasSize(2));
 	}
 
 }
