@@ -18,6 +18,7 @@ import static bloodbank.utility.MyConstants.PERSON_RESOURCE_NAME;
 import static bloodbank.utility.MyConstants.DONATION_RECORD_RESOURCE_NAME;
 import static bloodbank.utility.MyConstants.PHONE_RESOURCE_NAME;
 import static bloodbank.utility.MyConstants.BLOOD_DONATION_RESOURCE_NAME;
+import static bloodbank.utility.MyConstants.ADDRESS_RESOURCE_NAME;
 import static bloodbank.utility.MyConstants.ACCESS_UNAUTHORIZED;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
@@ -57,6 +58,7 @@ import org.junit.jupiter.api.Order;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 
+import bloodbank.entity.Address;
 import bloodbank.entity.DonationRecord;
 import bloodbank.entity.Person;
 import bloodbank.entity.Phone;
@@ -74,9 +76,11 @@ public class TestBloodBankSystem {
     static final String DEFAULT_FIRST_NAME = "Shawn";
     static final String DEFAULT_LAST_NAME = "Emami";
     private static Person newPerson;
+    private static Map<String, Object> sendPerson;
+    private static Map<String, Object> sendAddress;
     private static DonationRecord record;
     private static Phone phone;
-    private static Map<String, Object> sendPerson;
+    private static Address newAddress;
 
     // test fixture(s)
     static URI uri;
@@ -123,9 +127,23 @@ public class TestBloodBankSystem {
 		//DonationRecord setup
 		record = new DonationRecord();
 		
+		
 		//Phone setup
 		phone = new Phone();
 		phone.setNumber("1", "613", "1112222");
+		
+		//Address setup
+		newAddress = new Address();
+		newAddress.setAddress("22", "Walkley", "Ottawa", "ON", "CA", "K1V6A5");
+		
+		sendAddress = new HashMap<>();
+		sendAddress.put("country", newAddress.getCountry());
+		sendAddress.put("province", newAddress.getProvince());
+		sendAddress.put("zipcode", newAddress.getZipcode());
+		sendAddress.put("street", newAddress.getStreet());
+		sendAddress.put("streetNumber", newAddress.getStreetNumber());
+		sendAddress.put("city", newAddress.getCity());
+		
     }
 
     protected WebTarget webTarget;
@@ -436,4 +454,95 @@ public class TestBloodBankSystem {
 		assertThat(bloodDonations, hasSize(2));
 	}
 
+    @Order(20)
+    @Test
+    public void test20_all_addresses_admin_role() throws JsonMappingException, JsonProcessingException {
+    	Response response = getResource(adminAuth, ADDRESS_RESOURCE_NAME);
+    	assertThat(response.getStatus(), is(200));
+    	List<Address> addresses =  response.readEntity(new GenericType<List<Address>>(){
+    	});
+    	assertThat(addresses, is(not(empty())));
+    	assertThat(addresses, hasSize(1));	
+    }
+    
+    @Order(21)
+    @Test
+    public void test21_all_addresses_user_role() throws JsonMappingException, JsonProcessingException {
+    	Response response = getResource(userAuth, ADDRESS_RESOURCE_NAME);
+    	assertThat(response.getStatus(), is((401)));
+		assertThat(response.getStatusInfo().getReasonPhrase(), is(equalTo(ACCESS_UNAUTHORIZED)));
+    }
+    
+    
+    @Order(22)
+	@Test
+	public void test22_add_address() throws JsonMappingException, JsonProcessingException {
+		//GET all addresses (to check the original count)
+		Response response = getResource(adminAuth, ADDRESS_RESOURCE_NAME);
+		assertThat(response.getStatus(), is(200)); //check success code from response
+		
+		//use originalCount to keep track of the original number of records in the db
+		int originalCount = response.readEntity(new GenericType<List<Address>>() {
+		}).size();
+		
+		response = createResource(adminAuth, ADDRESS_RESOURCE_NAME, Entity.json(sendAddress)); //execute request to add new Person(sendPerson)
+
+		assertThat(response.getStatus(), is((200))); //check success code from response
+		Address returnedAddress = response.readEntity(Address.class);
+		newAddress.setId(returnedAddress.getId());
+		
+		//check returned details match details we submitted via sendPerson
+		assertThat(newAddress.getCountry(), is(equalTo(returnedAddress.getCountry())));
+		assertThat(newAddress.getProvince(), is(equalTo(returnedAddress.getProvince())));
+		assertThat(newAddress.getStreet(), is(equalTo(returnedAddress.getStreet())));
+		assertThat(newAddress.getStreetNumber(), is(equalTo(returnedAddress.getStreetNumber())));
+		assertThat(newAddress.getZipcode(), is(equalTo(returnedAddress.getZipcode())));
+		
+		
+		response = webTarget.path(ADDRESS_RESOURCE_NAME).request().get(); //GET ALL Addresses again
+		assertThat(response.getStatus(), is(200)); //check success code from response
+		
+		List<Address> addresses = response.readEntity(new GenericType<List<Address>>() {
+		});
+		
+		assertThat(originalCount+1, is(equalTo(addresses.size()))); //check that the size has increased
+		
+	}
+    
+    
+    
+    @Order(23)
+	@Test
+	public void test23_delete_address_user_role() throws JsonMappingException, JsonProcessingException {
+		Response response = deleteResource(userAuth, ADDRESS_RESOURCE_NAME + "/" + newAddress.getId()); // execute request to attempt delete
+		assertThat(response.getStatus(), is((401))); // check success code from response
+		assertThat(response.getStatusInfo().getReasonPhrase(), is(equalTo(ACCESS_UNAUTHORIZED)));
+	}
+    
+    @Order(24)
+	@Test
+	public void test24_delete_address_adminrole() throws JsonMappingException, JsonProcessingException {
+		// GET all addresses (to check the original count)
+		Response response = getResource(adminAuth, ADDRESS_RESOURCE_NAME); //pass in adminAuth this time
+		assertThat(response.getStatus(), is(200)); // check success code from response
+
+		// use newCount to keep track of the original number of records + the newly
+		// added address (sendAddress) in the db (so existing size plus one)
+		int count = response.readEntity(new GenericType<List<Address>>() {
+		}).size();
+
+		response = webTarget.path(ADDRESS_RESOURCE_NAME + "/" + newAddress.getId()).request()
+				.delete(); // execute request to delete a single address (should be the new address we just
+							// created)
+		assertThat(response.getStatus(), is(200)); // check success code from response
+		assertThat(newAddress.getId(), is(response.readEntity(Address.class).getId()));
+
+		response = webTarget.path(ADDRESS_RESOURCE_NAME).request().get();
+		assertThat(response.getStatus(), is(200)); // check success code from response
+
+		List<Address> addresses = response.readEntity(new GenericType<List<Address>>() {
+		});
+
+		assertThat(count - 1, is(equalTo(addresses.size())));
+	}
 }
