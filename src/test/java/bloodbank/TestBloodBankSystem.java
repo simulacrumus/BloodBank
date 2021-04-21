@@ -1,9 +1,7 @@
 /**
- * File: OrderSystemTestSuite.java
- * Course materials (20F) CST 8277
- * (Original Author) Mike Norman
+ * File: TestBloodBankSystem.java
  *
- * @date 2020 10
+ * @date 2021 04
  *
  * (Modified) 
  * @author Darryl Galaraga 

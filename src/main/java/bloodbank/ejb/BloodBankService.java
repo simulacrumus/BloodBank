@@ -1,5 +1,5 @@
 /**
- * File: RecordService.java
+ * File: BloodBankService.java
  * Course materials (21W) CST 8277
  *
  * @author Shariar (Shawn) Emami
