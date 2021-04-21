@@ -75,7 +75,7 @@ public class PersonResource {
 		Person person = null;
 		if ( sc.isCallerInRole( ADMIN_ROLE)) {
 			person = service.getPersonById( id);
-			if(person!=null) {
+			if(person==null) {
 				HttpErrorResponse error = new HttpErrorResponse(Status.NOT_FOUND.getStatusCode(), "No Person found with id " + id);
 				return Response.status(Status.NOT_FOUND).entity(error).build();
 			}
