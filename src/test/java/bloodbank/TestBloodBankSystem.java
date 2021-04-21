@@ -15,12 +15,14 @@ import static bloodbank.utility.MyConstants.DEFAULT_ADMIN_USER_PASSWORD;
 import static bloodbank.utility.MyConstants.DEFAULT_USER_PASSWORD;
 import static bloodbank.utility.MyConstants.DEFAULT_USER_PREFIX;
 import static bloodbank.utility.MyConstants.PERSON_RESOURCE_NAME;
+import static bloodbank.utility.MyConstants.DONATION_RECORD_RESOURCE_NAME;
 import static bloodbank.utility.MyConstants.ACCESS_UNAUTHORIZED;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
 import static org.hamcrest.collection.IsEmptyCollection.empty;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.hamcrest.Matchers.equalTo;
 
 
@@ -53,6 +55,7 @@ import org.junit.jupiter.api.Order;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 
+import bloodbank.entity.DonationRecord;
 import bloodbank.entity.Person;
 
 @TestMethodOrder(MethodOrderer.MethodName.class)
@@ -68,6 +71,7 @@ public class TestBloodBankSystem {
     static final String DEFAULT_FIRST_NAME = "Shawn";
     static final String DEFAULT_LAST_NAME = "Emami";
     private static Person newPerson;
+    private static DonationRecord record;
     private static Map<String, Object> sendPerson;
 
     // test fixture(s)
@@ -107,6 +111,9 @@ public class TestBloodBankSystem {
 		sendPerson = new HashMap<>();
 		sendPerson.put("firstName", newPerson.getFirstName());
 		sendPerson.put("lastName", newPerson.getLastName());
+		
+		//Donation setup
+		record = new DonationRecord();
     }
 
     protected WebTarget webTarget;
@@ -137,24 +144,24 @@ public class TestBloodBankSystem {
 		assertThat(response.getStatusInfo().getReasonPhrase(), is(equalTo(ACCESS_UNAUTHORIZED)));
 	}
     
+//    @Order(3)
+//	@Test
+//	public void test03_get_customer_by_id_adminrole() throws JsonMappingException, JsonProcessingException {
+//		Response response = getResource(adminAuth, PERSON_RESOURCE_NAME + "/" + DEFAULT_ID);
+//		assertThat(response.getStatus(), is((200))); //check success code from response 
+//		
+//		//access entity returned in response
+//		Person returnedPerson = response.readEntity(Person.class);
+//		
+//		//validate values
+//		assertThat(DEFAULT_ID, is(equalTo(returnedPerson.getId())));
+//		assertThat(DEFAULT_FIRST_NAME, is(equalTo(returnedPerson.getFirstName())));
+//		assertThat(DEFAULT_LAST_NAME, is(equalTo(returnedPerson.getLastName())));
+//	}
+    
     @Order(3)
 	@Test
-	public void test03_get_customer_by_id_adminrole() throws JsonMappingException, JsonProcessingException {
-		Response response = getResource(adminAuth, PERSON_RESOURCE_NAME + "/" + DEFAULT_ID);
-		assertThat(response.getStatus(), is((200))); //check success code from response 
-		
-		//access entity returned in response
-		Person returnedPerson = response.readEntity(Person.class);
-		
-		//validate values
-		assertThat(DEFAULT_ID, is(equalTo(returnedPerson.getId())));
-		assertThat(DEFAULT_FIRST_NAME, is(equalTo(returnedPerson.getFirstName())));
-		assertThat(DEFAULT_LAST_NAME, is(equalTo(returnedPerson.getLastName())));
-	}
-    
-    @Order(4)
-	@Test
-	public void test04_add_customer() throws JsonMappingException, JsonProcessingException {
+	public void test03_add_customer() throws JsonMappingException, JsonProcessingException {
 		//GET all customers/persons (to check the original count)
 		Response response = getResource(adminAuth, PERSON_RESOURCE_NAME);
 		assertThat(response.getStatus(), is(200)); //check success code from response
@@ -181,30 +188,104 @@ public class TestBloodBankSystem {
 		
 		assertThat(originalCount+1, is(equalTo(emps.size()))); //check that the size has increased
 		
-		response = webTarget.path(PERSON_RESOURCE_NAME + "/" + newPerson.getId()).request()
-			.get(); //get the new person we just added
-		assertThat(response.getStatus(), is(200)); //check success code from response
-		returnedPerson = response.readEntity(Person.class);
-		
-		//check all value are identical
-		assertThat(newPerson.getId(), is(equalTo(returnedPerson.getId())));
-		assertThat(newPerson.getFirstName(), is(equalTo(returnedPerson.getFirstName())));
-		assertThat(newPerson.getLastName(), is(equalTo(returnedPerson.getLastName())));
-		
 	}
     
+	@Order(4)
+	@Test
+	public void test04_add_donation_record_to_customer() throws JsonMappingException, JsonProcessingException {
+		// create a structured DonationRecord object jor json
+		Map<String, Object> sendDonationRecord = new HashMap<>();
+		sendDonationRecord.put("tested", false);
+
+		// execute request to add a donation to the newly created person
+		Response response = createResource(adminAuth,
+				PERSON_RESOURCE_NAME + "/" + newPerson.getId() + "/donationrecord", Entity.json(sendDonationRecord));
+		assertThat(response.getStatus(), is((200)));
+
+		DonationRecord returnedRecord = response.readEntity(DonationRecord.class);
+		record.setId(returnedRecord.getId());
+
+		// validate the relationship between Person & DonationRecord works as expected
+		assertNotEquals(null, returnedRecord); // ensure that the response has returned a valid object
+		assertThat((byte) 0, is(returnedRecord.getTested())); // the tested value should be 0b and not 1b since we
+																// passed in false on line 197
+
+	}
+	
     @Order(5)
 	@Test
-	public void test05_delete_customer_user_role() throws JsonMappingException, JsonProcessingException {
+	public void test05_getAll_donation_records() throws JsonMappingException, JsonProcessingException {
+		Response response = getResource(adminAuth, DONATION_RECORD_RESOURCE_NAME);
+		assertThat(response.getStatus(), is(200)); // check success code from response
+		List<DonationRecord> records = response.readEntity(new GenericType<List<DonationRecord>>() {
+		});
+		assertThat(records, is(not(empty())));
+		assertThat(records, hasSize(1));
+	}
+    
+	@Order(6)
+	@Test
+	public void test06_get_donation_record_by_id() throws JsonMappingException, JsonProcessingException {
+		Response response = getResource(adminAuth, DONATION_RECORD_RESOURCE_NAME + "/" + record.getId());
+		assertThat(response.getStatus(), is(200)); // check success code from response
 
-		Response response = deleteResource(userAuth, PERSON_RESOURCE_NAME + "/" + newPerson.getId()); // execute request to attempt delete
-		assertThat(response.getStatus(), is((401)));
+		DonationRecord returnedRecord = response.readEntity(DonationRecord.class);
+
+		// validate fields
+		assertThat(record.getId(), is(equalTo(returnedRecord.getId())));
+		assertThat(record.getTested(), is(returnedRecord.getTested()));
+	}
+	
+	@Order(7)
+	@Test
+	public void test07_get_donation_record_by_id() throws JsonMappingException, JsonProcessingException {
+		Response response = getResource(adminAuth, DONATION_RECORD_RESOURCE_NAME + "/" + record.getId());
+		assertThat(response.getStatus(), is(200)); // check success code from response
+
+		DonationRecord returnedRecord = response.readEntity(DonationRecord.class);
+
+		// validate fields
+		assertThat(record.getId(), is(equalTo(returnedRecord.getId())));
+		assertThat(record.getTested(), is(returnedRecord.getTested()));
+	}
+	
+    @Order(8)
+	@Test
+	public void test08_delete_donation_record_user_role() throws JsonMappingException, JsonProcessingException {
+
+		Response response = deleteResource(userAuth, DONATION_RECORD_RESOURCE_NAME + "/" + record.getId()); // execute request to attempt delete
+		assertThat(response.getStatus(), is((401))); // check success code from response
 		assertThat(response.getStatusInfo().getReasonPhrase(), is(equalTo(ACCESS_UNAUTHORIZED)));
 	}
     
-    @Order(6)
+    @Order(9)
 	@Test
-	public void test06_delete_customer_adminrole() throws JsonMappingException, JsonProcessingException {
+	public void test09_delete_donation_record_adminrole() throws JsonMappingException, JsonProcessingException {
+
+		Response response = deleteResource(adminAuth, DONATION_RECORD_RESOURCE_NAME + "/" + record.getId()); // execute request to attempt delete
+		assertThat(response.getStatus(), is((200))); // check success code from response
+		
+		response = getResource(adminAuth, DONATION_RECORD_RESOURCE_NAME);
+		assertThat(response.getStatus(), is(200)); // check success code from response
+		
+		List<DonationRecord> records = response.readEntity(new GenericType<List<DonationRecord>>() {
+		});
+		assertThat(records, is(empty()));
+		
+	}
+    
+    @Order(10)
+	@Test
+	public void test10_delete_customer_user_role() throws JsonMappingException, JsonProcessingException {
+
+		Response response = deleteResource(userAuth, PERSON_RESOURCE_NAME + "/" + newPerson.getId()); // execute request to attempt delete
+		assertThat(response.getStatus(), is((401))); // check success code from response
+		assertThat(response.getStatusInfo().getReasonPhrase(), is(equalTo(ACCESS_UNAUTHORIZED)));
+	}
+    
+    @Order(11)
+	@Test
+	public void test11_delete_customer_adminrole() throws JsonMappingException, JsonProcessingException {
 		// GET all customers/persons (to check the original count)
 		Response response = getResource(adminAuth, PERSON_RESOURCE_NAME); //pass in adminAuth this time
 		assertThat(response.getStatus(), is(200)); // check success code from response
