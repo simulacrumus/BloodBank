@@ -1,8 +1,10 @@
 /**
  * File: PersonResource.java Course materials (21W) CST 8277
  *
- * @author Shariar (Shawn) Emami
- * @author (original) Mike Norman update by : I. Am. A. Student 040nnnnnnn
+ * @author Darryl Galaraga 
+ * @author Elyse Ntigirishari
+ * @author Emrah Kinay
+ * @author Jephte Francois
  */
 package bloodbank.rest.resource;
 

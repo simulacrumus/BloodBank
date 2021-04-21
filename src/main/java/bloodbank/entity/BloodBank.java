@@ -1,3 +1,9 @@
+/*
+ * @author Darryl Galaraga 
+ * @author Elyse Ntigirishari
+ * @author Emrah Kinay
+ * @author Jephte Francois
+ */
 package bloodbank.entity;
 
 import java.io.Serializable;

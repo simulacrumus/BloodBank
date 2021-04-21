@@ -5,7 +5,11 @@
  *
  * @date 2020 10
  *
- * (Modified) @author Jephte Francois
+ * (Modified) 
+ * @author Darryl Galaraga 
+ * @author Elyse Ntigirishari
+ * @author Emrah Kinay
+ * @author Jephte Francois
  */
 package bloodbank;
 

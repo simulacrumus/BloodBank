@@ -1,8 +1,11 @@
 /**
  * File: AddressResource.java Course materials (21W) CST 8277
+
  *
+ * @author Darryl Galaraga 
+ * @author Elyse Ntigirishari
  * @author Emrah Kinay
- * @author (original) Mike Norman update by : I. Am. A. Student 040nnnnnnn
+ * @author Jephte Francois
  */
 package bloodbank.rest.resource;
 
